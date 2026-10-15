@@ -2,12 +2,30 @@ import {catalogue, byId} from './catalogue.js';
 export const VERSION = 1;
 export const STORAGE_KEY = 'toy-workshop-v1';
 export function freshProject() {
-  return {version:VERSION, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], tested:{}, rules:[], nextRule:1, code:'', generated:'', backup:'', breadboard:{happy:false}, build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'journey'};
+  return {version:VERSION, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], setup:{editor:false,firmware:false,library:false}, tested:{}, rules:[], nextRule:1, code:'', generated:'', backup:'', breadboard:{happy:false}, build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'journey'};
 }
 export const selectedParts = p => catalogue.filter(c => p.selected.includes(c.id));
 export const ideaReady = p => ['when','will','person','looks','play'].every(k => p.idea[k].trim());
 export const ruleEnabled = (p,r) => p.selected.includes(r.input) && r.outputs.length > 0 && r.outputs.every(id => p.selected.includes(id));
 export const activeRules = p => p.rules.filter(r => ruleEnabled(p,r));
+// Local, explainable hints, never automatic component choices.
+export function suggestedParts(p) {
+  const patterns=[['button','when',/\b(button|press|push|squeeze)\b/i],['potentiometer','when',/\b(knob|dial|turn|twist|spin|spins)\b/i],['capacitive-touch','when',/\b(touch|stroke|tap)\b/i],['ldr','when',/\b(light|shadow|dark|cover)\b/i],['led','will',/\b(light|lights|glow|flash|bright|eyes)\b/i],['passive-buzzer','will',/\b(sound|noise|beep|scream|chirp|pitch|tone|squeak)\b/i],['servo','will',/\b(move|wave|wiggle|rotate|flap|spin)\b/i]];
+  return patterns.flatMap(([id,field,pattern])=>{const match=p.idea[field].match(pattern);return match?[{id,word:match[0]}]:[];});
+}
+export function suggestedDraft(p) {
+  const inputs=selectedParts(p).filter(c=>c.kind==='detect');
+  const available=selectedParts(p).filter(c=>c.kind==='do'&&!p.rules.some(r=>r.outputs.includes(c.id)));
+  const hints=suggestedParts(p).map(h=>h.id);
+  const input=inputs.find(c=>hints.includes(c.id))||inputs[0];
+  const follows=/\b(higher|lower|pitch|brighter|dimmer|changes?|changing|gets|follows?)\b/i.test(p.idea.will);
+  return {input:input?.id||'',outputs:available.length===1?[available[0].id]:available.filter(c=>hints.includes(c.id)).map(c=>c.id),mode:input?.analogue?(follows?'follow':'threshold'):'hold',threshold:.5,direction:'above'};
+}
+export function previewResponse(r,value,toggled=false) {
+  const active=r.mode==='toggle'?Boolean(toggled):r.mode==='threshold'?(r.direction==='below'?value<r.threshold:value>r.threshold):Boolean(value);
+  const level=r.mode==='follow'?value:Number(active);
+  return {active,level,frequency:r.outputs.includes('passive-buzzer')&&level>.02?(r.mode==='follow'?Math.trunc(220+880*value):2000):0};
+}
 export function canTestInteraction(p) {
   const rules=activeRules(p), used=new Set(rules.flatMap(r=>[r.input,...r.outputs]));
   return Boolean(rules.length && [...used].every(id=>p.tested[id]) && p.code.trim() && p.generated===generateCode(p));
@@ -62,6 +80,7 @@ export function validateProject(raw) {
   for (const k of Object.keys(p.idea)) p.idea[k] = str(raw.idea[k]);
   p.selected = [...new Set(raw.selected.filter(id=>byId[id]))];
   p.have = Array.isArray(raw.have) ? raw.have.filter(x=>typeof x==='string').slice(0,60) : [];
+  for (const k of Object.keys(p.setup)) p.setup[k]=raw.setup?.[k]===true;
   p.tested = Object.fromEntries(catalogue.map(c=>[c.id,raw.tested?.[c.id]===true]));
   const ruleIds = new Set(); const outputIds = new Set();
   for (const r of raw.rules.slice(0,20)) {
@@ -80,7 +99,7 @@ export function validateProject(raw) {
   for (const k of ['access','secure','retest']) p.build[k]=raw.build?.[k]===true;
   for (const k of ['observed','next']) p.play[k]=str(raw.play?.[k]);
   p.play.worked=raw.play?.worked===true;
-  p.page=['journey','idea','parts','make','play','finish'].includes(raw.page)?raw.page:p.page;
+  p.page=['journey','idea','parts','ready','make','play','finish'].includes(raw.page)?raw.page:p.page;
   p.completed=raw.completed===true && Boolean(readyToFinish(p));
   return p;
 }

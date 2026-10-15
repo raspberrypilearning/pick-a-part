@@ -18,14 +18,14 @@ try{
  await page.evaluate(()=>document.fonts.ready);
  await page.screenshot({path:'outputs/prototype-journey.png',fullPage:true});
  await page.locator('.btn.primary').first().hover();contrastChecks+=await checkTextContrast(page);
- assert.deepEqual(await page.locator('.navlist button').evaluateAll(buttons=>buttons.map(b=>b.dataset.action)),['nav-journey','nav-idea','nav-parts','nav-make','nav-play','nav-finish']);
+ assert.deepEqual(await page.locator('.navlist button').evaluateAll(buttons=>buttons.map(b=>b.dataset.action)),['nav-journey','nav-idea','nav-parts','nav-ready','nav-make','nav-play','nav-finish']);
  assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
- assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'01 / Your journey');
+ assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'Your journey');
  await page.getByRole('button',{name:'Start with my idea',exact:true}).click();
- assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'02 / Imagine');
+ assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'Your idea');
  await page.reload();assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-idea','returning projects keep their saved page');
  await page.locator('.brand').click();assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
- await nav('parts');assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'03 / Choose');
+ await nav('parts');assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'Choose parts');
  await nav('play');assert.match(await page.locator('.callout.warning').textContent(),/Prototype the interaction first/);
  contrastChecks+=await checkTextContrast(page);
  await nav('parts');await click('parts-next');assert.match(await page.locator('#parts-error').textContent(),/at least one/);
@@ -41,7 +41,7 @@ try{
  await click('code-workbench');await page.locator('[data-draft-output="led"]').check();await page.getByRole('button',{name:'Add to my code'}).click();
  await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/active/);await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/resting/);
  assert.equal(await page.locator('#breadboard-happy').isChecked(),false,'preview is not a hardware test');
- assert.equal(await page.locator('#breadboard-next').isEnabled(),false);
+ assert.equal(await page.locator('#breadboard-next').isEnabled(),true);assert.match(await page.locator('#breadboard-next').textContent(),/Explore physical design/);
  await page.locator('#breadboard-happy').check();assert.equal(await page.locator('#breadboard-next').isEnabled(),true);
  await page.locator('#rule-input').selectOption('potentiometer');await page.locator('#rule-mode').selectOption('follow');
  for(const id of ['passive-buzzer','servo'])await page.locator(`[data-draft-output="${id}"]`).check();
@@ -62,7 +62,7 @@ try{
  await page.locator('#breadboard-happy').check();
  await page.locator('#code-editor').fill((await page.locator('#code-editor').inputValue())+'\n# A new test change\n');
  assert.equal(await page.locator('#breadboard-happy').isChecked(),false,'code edits invalidate the complete interaction test');
- assert.equal(await page.locator('#breadboard-next').isEnabled(),false);
+ assert.equal(await page.locator('#breadboard-next').isEnabled(),true);assert.match(await page.locator('#breadboard-next').textContent(),/Explore physical design/);
  await page.locator('#breadboard-happy').check();
  await page.reload();await page.locator('[data-make-tab="code"]').click();assert.equal(await page.locator('#breadboard-happy').isChecked(),true);
  await nav('play');await page.locator('#build-body').fill('A cardboard creature. The button is its nose.');
@@ -86,7 +86,7 @@ try{
  // Every screen reflows at phone and desktop widths, without page overflow.
  for(const width of [1440,768,390,320]){
   await page.setViewportSize({width,height:900});
-  for(const id of ['journey','idea','parts','make','play','finish']){
+  for(const id of ['journey','idea','parts','ready','make','play','finish']){
    await nav(id);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);assert.equal(overflow,false,`${id} overflows at ${width}px`);
    contrastChecks+=await checkTextContrast(page);
   }
@@ -98,6 +98,6 @@ try{
  await page.locator('#project-file').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{"version":4}')});
  assert.equal(await page.evaluate(()=>localStorage.getItem('toy-workshop-v1')),before);
  assert.equal(errors.length,0,errors.join('\n'));
- console.log('PASS: end-to-end journey; parts/code propagation; 2 interactions; preview; edited-code preservation; paused rules; completion; save/import; escaped text; 24 responsive page checks; modal keyboard handling; invalid import; no browser runtime errors.');
+ console.log('PASS: end-to-end journey; parts/code propagation; 2 interactions; preview; edited-code preservation; paused rules; completion; save/import; escaped text; 28 responsive page checks; modal keyboard handling; invalid import; no browser runtime errors.');
  console.log(`PASS: Code Club brand palette and ${contrastChecks} rendered text contrast checks (minimum 4.5:1).`);
 }finally{await browser.close();}

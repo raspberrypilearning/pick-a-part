@@ -85,6 +85,7 @@ select:focus-visible, summary:focus-visible { outline-color: var(--cc-blue); }
 /* The editor stays dark, with legible text and hover states. */
 .code-shell { background: var(--cc-dark-green); border-color: var(--cc-slate); }
 .code-toolbar { background: var(--cc-slate); color: var(--white); }
+.code-toolbar .muted { color: var(--white); }
 .code-toolbar button { color: var(--white); background: transparent; border-color: var(--support-slate-20); }
 .code-toolbar button:hover { background: var(--cc-dark-green); color: var(--white); }
 .code-toolbar button:focus-visible { outline-color: var(--cc-lemon); }

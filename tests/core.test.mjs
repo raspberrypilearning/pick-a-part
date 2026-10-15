@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {catalogue,testCode} from '../catalogue.js';
-import {freshProject,generateCode,validateProject,activeRules,materials,modeOptions,canTestInteraction,breadboardReady,readyToFinish} from '../core.js';
+import {freshProject,generateCode,validateProject,activeRules,materials,modeOptions,canTestInteraction,breadboardReady,readyToFinish,suggestedParts,suggestedDraft,previewResponse} from '../core.js';
+import {picoPins,picoConnections,pages} from '../guidance.js';
+import {SoundPreview} from '../sound.js';
 const projectWith=(input,outputs,mode,extra={})=>{const p=freshProject();p.selected=[input,...outputs];p.rules=[{id:1,input,outputs,mode,threshold:.5,direction:'above',...extra}];return p;};
 test('new projects open on the journey overview and saved pages are preserved',()=>{
  assert.equal(freshProject().page,'journey');
- for(const page of ['journey','idea','parts','make','play','finish']){
+ for(const page of ['journey','idea','parts','ready','make','play','finish']){
   assert.equal(validateProject({...freshProject(),page}).page,page);
  }
  assert.equal(validateProject({...freshProject(),page:'unknown'}).page,'journey');
@@ -14,6 +16,41 @@ test('new projects open on the journey overview and saved pages are preserved',(
 test('pin assignments are unique; PWM outputs do not share a slice',()=>{
  assert.equal(new Set(catalogue.map(c=>c.pin)).size,catalogue.length);
  const pins=catalogue.filter(c=>c.kind==='do').map(c=>Math.floor(c.pin/2)%8);assert.equal(new Set(pins).size,pins.length);
+});
+test('setup migrates without inventing completion and round-trips observations',()=>{
+ const p=freshProject();delete p.setup;assert.deepEqual(validateProject(p).setup,{editor:false,firmware:false,library:false});
+ p.setup={editor:true,firmware:true,library:true};assert.deepEqual(validateProject(p).setup,p.setup);
+});
+test('idea hints stay optional and a sole available output is suggested once',()=>{
+ const p=freshProject();p.idea.when='spins the knob';p.idea.will='make a noise that gets higher';
+ assert.deepEqual(suggestedParts(p).map(h=>h.id),['potentiometer','passive-buzzer']);assert.deepEqual(p.selected,[]);
+ p.selected=['potentiometer','passive-buzzer'];assert.deepEqual(suggestedDraft(p),{input:'potentiometer',outputs:['passive-buzzer'],mode:'follow',threshold:.5,direction:'above'});
+ p.rules=[{id:1,input:'potentiometer',outputs:['passive-buzzer'],mode:'follow',threshold:.5,direction:'above'}];assert.deepEqual(suggestedDraft(p).outputs,[]);
+});
+test('pin reference uses GPIO names and the shared journey has no extra numbered overview',()=>{
+ assert.equal(picoPins.length,40);for(const c of catalogue)assert.equal(picoPins[c.physical-1],`GP${c.pin}`);
+ assert.equal(picoPins[32],'AGND');assert.equal(picoPins[35],'3V3 OUT');assert.equal(picoPins[39],'VBUS');
+ assert.deepEqual(picoConnections.potentiometer,[31,33,36],'component leg numbers must not be mistaken for Pico pins');
+ for(const c of catalogue){assert.ok(picoConnections[c.id].includes(c.physical));assert.ok(picoConnections[c.id].every(n=>n>=1&&n<=40));}
+ assert.deepEqual(pages.map(([id])=>id),['journey','idea','parts','ready','make','play','finish']);
+});
+test('sound preview pitches match the starter and rest below its minimum',()=>{
+ const r={input:'potentiometer',outputs:['passive-buzzer'],mode:'follow'};
+ assert.equal(previewResponse(r,0).frequency,0);assert.equal(previewResponse(r,.5).frequency,660);assert.equal(previewResponse(r,1).frequency,1100);
+ assert.equal(previewResponse({...r,mode:'toggle'},0,true).frequency,2000);
+ assert.equal(previewResponse({...r,outputs:['led']},1).frequency,0);
+});
+test('audio starts only on request, stays quiet, and stops or handles unavailable audio',async()=>{
+ const calls=[];let contexts=0;
+ class Context {constructor(){contexts++;this.currentTime=0;this.destination={};}resume(){return Promise.resolve();}createOscillator(){return{frequency:{value:0,setTargetAtTime:v=>calls.push(['pitch',v])},connect(){},start(){calls.push('start');},stop(){calls.push('stop');},disconnect(){}};}createGain(){const gain={gain:{value:0},connect(){calls.push(['gain',gain.gain.value]);},disconnect(){}};return gain;}}
+ const sound=new SoundPreview(t=>calls.push(t),Context);assert.equal(contexts,0);await sound.play(0);assert.equal(contexts,0);
+ await sound.play(660);assert.equal(contexts,1);assert.ok(calls.some(c=>Array.isArray(c)&&c[0]==='gain'&&c[1]===.015));
+ sound.tune(1100);assert.ok(calls.some(c=>Array.isArray(c)&&c[0]==='pitch'&&c[1]===1100));sound.stop();assert.equal(sound.voice,null);assert.ok(calls.includes('stop'));
+ const missing=new SoundPreview(t=>calls.push(t),null);await missing.play(660);assert.match(calls.at(-1),/unavailable/);
+});
+test('leaving while the audio context resumes cannot start a late sound',async()=>{
+ let resume;let started=false;class Context{resume(){return new Promise(resolve=>resume=resolve);}createOscillator(){started=true;throw Error('Must not start');}}
+ const sound=new SoundPreview(()=>{},Context),pending=sound.play(660);sound.stop();resume();await pending;assert.equal(started,false);
 });
 test('materials include shared supplies once and servo-specific power',()=>{
  const p=freshProject();p.selected=catalogue.map(c=>c.id);const items=materials(p);assert.equal(new Set(items).size,items.length);assert.ok(items.includes('4 × AA NiMH cells + holder'));
