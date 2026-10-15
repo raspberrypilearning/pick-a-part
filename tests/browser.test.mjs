@@ -1,6 +1,7 @@
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 import assert from 'node:assert/strict';
 import {readFile,mkdir} from 'node:fs/promises';
+import {checkTextContrast,checkBrandPalette} from './colour-contrast.mjs';
 await mkdir('outputs',{recursive:true});
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true});
@@ -8,10 +9,15 @@ const page=await context.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 const click=action=>page.locator(`[data-action="${action}"]`).first().click();
 const nav=id=>page.locator(`.navlist [data-action="nav-${id}"]`).click();
+let contrastChecks=0;
 try{
  await page.goto(process.env.TEST_URL||'http://127.0.0.1:4173');
  await page.locator('h1').waitFor();
  assert.equal(await page.title(),'Toy workshop · Pick a path');
+ await checkBrandPalette(page);contrastChecks+=await checkTextContrast(page);
+ await page.evaluate(()=>document.fonts.ready);
+ await page.screenshot({path:'outputs/prototype-journey.png',fullPage:true});
+ await page.locator('.btn.primary').first().hover();contrastChecks+=await checkTextContrast(page);
  assert.deepEqual(await page.locator('.navlist button').evaluateAll(buttons=>buttons.map(b=>b.dataset.action)),['nav-journey','nav-idea','nav-parts','nav-make','nav-play','nav-finish']);
  assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
  assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'01 / Your journey');
@@ -21,7 +27,9 @@ try{
  await page.locator('.brand').click();assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
  await nav('parts');assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'03 / Choose');
  await nav('play');assert.match(await page.locator('.callout.warning').textContent(),/Prototype the interaction first/);
+ contrastChecks+=await checkTextContrast(page);
  await nav('parts');await click('parts-next');assert.match(await page.locator('#parts-error').textContent(),/at least one/);
+ contrastChecks+=await checkTextContrast(page);
  await nav('idea');await click('example');await page.getByRole('button',{name:'Review my idea'}).click();await page.locator('#confirm-dialog').waitFor({state:'visible'});await click('review-next');
  for(const id of ['button','potentiometer','led','passive-buzzer','servo'])await page.locator(`[data-pick="${id}"]`).click();
  await page.screenshot({path:'outputs/prototype-parts.png',fullPage:true});
@@ -43,6 +51,8 @@ try{
  const code=await page.locator('#code-editor').inputValue();assert.equal((code.match(/from picozero import/g)||[]).length,1);assert.match(code,/Pot\(26\)/);assert.match(code,/Servo\(7\)/);
  await page.locator('#preview-value').fill('0.8');assert.match(await page.locator('#preview-state').textContent(),/0.80/);
  await page.screenshot({path:'outputs/prototype-code.png',fullPage:true});
+ contrastChecks+=await checkTextContrast(page);
+ await page.locator('.code-toolbar button').first().hover();contrastChecks+=await checkTextContrast(page);
  await page.locator('#code-editor').fill(code+'\n# My own change\n');
  await nav('parts');await page.locator('[data-pick="potentiometer"]').click();await nav('make');await page.locator('[data-make-tab="code"]').click();
  assert.match(await page.locator('#code-editor').inputValue(),/# My own change/);assert.equal(await page.locator('.rule-card.suspended').count(),1);
@@ -78,6 +88,7 @@ try{
   await page.setViewportSize({width,height:900});
   for(const id of ['journey','idea','parts','make','play','finish']){
    await nav(id);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);assert.equal(overflow,false,`${id} overflows at ${width}px`);
+   contrastChecks+=await checkTextContrast(page);
   }
  }
  await nav('parts');await page.screenshot({path:'outputs/prototype-mobile.png',fullPage:true});
@@ -88,4 +99,5 @@ try{
  assert.equal(await page.evaluate(()=>localStorage.getItem('toy-workshop-v1')),before);
  assert.equal(errors.length,0,errors.join('\n'));
  console.log('PASS: end-to-end journey; parts/code propagation; 2 interactions; preview; edited-code preservation; paused rules; completion; save/import; escaped text; 24 responsive page checks; modal keyboard handling; invalid import; no browser runtime errors.');
+ console.log(`PASS: Code Club brand palette and ${contrastChecks} rendered text contrast checks (minimum 4.5:1).`);
 }finally{await browser.close();}

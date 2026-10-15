@@ -1,0 +1,99 @@
+/* Code Club 2024 brand guide, pp. 24–27.
+   Keep core/secondary colours untinted. Tints below use supporting colours only.
+   This theme changes colour, not layout, content or the learner journey. */
+:root {
+  --cc-green: #41b653;
+  --cc-raspberry: #da315f;
+  --cc-lemon: #f8f294;
+  --cc-blue: #46499e;
+  --cc-orange: #f26a45;
+  --cc-yellow: #fedf00;
+  --cc-pink: #ef60a3;
+  --cc-cyan: #31a9e0;
+  --cc-support-green: #4aba7a;
+  --cc-off-white: #f7f3ed;
+  --cc-slate: #37384d;
+  --cc-dark-green: #061719;
+  --cc-burgundy: #632341;
+  --support-green-20: #dbf1e4;
+  --support-cyan-20: #d6eef9;
+  --support-pink-20: #fcdfed;
+  --support-slate-20: #d7d7db;
+  --support-slate-60: #878894;
+  --paper: var(--cc-off-white);
+  --ink: var(--cc-dark-green);
+  --muted: var(--cc-slate);
+  --line: var(--support-slate-20);
+  --green: var(--cc-green);
+  --mint: var(--support-green-20);
+  --pink: var(--support-pink-20);
+  --purple: var(--cc-blue);
+  --blue: var(--cc-blue);
+  --white: #ffffff;
+  --danger: var(--cc-burgundy);
+}
+
+/* Dark text on bright surfaces; white text on blue actions. */
+a, .btn.text, .brick-link { color: var(--cc-blue); }
+.btn.danger { color: var(--danger); }
+.brand, .brand-mark { color: var(--ink); }
+.save-status::before { background: var(--cc-green); }
+.sidebar { background: var(--white); }
+.navitem.active { background: var(--cc-green); color: var(--ink); font-weight: 700; }
+.navitem.active .number { border-color: var(--ink); color: var(--ink); }
+.navitem:hover:not(.active), .segmented { background: var(--mint); }
+.step-tag { background: var(--cc-lemon); border-color: var(--cc-lemon); color: var(--ink); }
+.panel.green, .completion { border-color: var(--cc-support-green); }
+.panel.pink { border-color: var(--cc-pink); }
+.warning { background: var(--cc-lemon); border-color: var(--cc-orange); }
+.error { background: var(--pink); }
+.btn, .chip, .select-indicator, .field textarea, .field input, .field select { border-color: var(--support-slate-60); }
+.btn:hover { background: var(--support-cyan-20); }
+.btn.primary { background: var(--cc-blue); border-color: var(--cc-blue); color: var(--white); }
+.btn.primary:hover { background: var(--cc-slate); border-color: var(--cc-slate); }
+.btn:disabled, .btn.primary:disabled, .btn.primary:disabled:hover { opacity: 1; background: var(--support-slate-20); border-color: var(--support-slate-60); color: var(--cc-slate); }
+.field textarea::placeholder, .field input::placeholder { color: var(--muted); opacity: 1; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible,
+select:focus-visible, summary:focus-visible { outline-color: var(--cc-blue); }
+.check input, .preview-control { accent-color: var(--cc-blue); }
+.statement .number { border-color: var(--cc-support-green); background: var(--mint); color: var(--ink); }
+
+/* Small bright accents, with the same colours carried through the workbench. */
+.toy-shape { background: var(--cc-green); border-color: var(--ink); box-shadow: 8px 8px 0 var(--cc-lemon); }
+.toy-shape::before, .toy-shape::after { background: var(--ink); }
+.toy-mouth { border-color: var(--ink); }
+.toy-star { color: var(--cc-raspberry); }
+.toy-loop { color: var(--cc-blue); }
+.strand { background: var(--cc-cyan); color: var(--ink); }
+.strand.do { background: var(--cc-pink); color: var(--ink); }
+.strand.decide { background: var(--cc-lemon); color: var(--ink); }
+.component-card { border-color: var(--line); }
+.component-card.chosen { border-color: var(--cc-blue); box-shadow: inset 0 0 0 1px var(--cc-blue); background: var(--mint); }
+.chosen .select-indicator { background: var(--cc-blue); border-color: var(--cc-blue); color: var(--white); }
+.journey-row .number { color: var(--ink); }
+.journey-row:nth-child(1) .number { background: var(--cc-green); border-color: var(--cc-green); }
+.journey-row:nth-child(2) .number { background: var(--cc-cyan); border-color: var(--cc-cyan); }
+.journey-row:nth-child(3) .number { background: var(--cc-lemon); border-color: var(--cc-lemon); }
+.journey-row:nth-child(4) .number { background: var(--cc-pink); border-color: var(--cc-pink); }
+.journey-row:nth-child(5) .number { background: var(--cc-blue); border-color: var(--cc-blue); color: var(--white); }
+.status { color: var(--ink); }
+.status.later { background: var(--cc-off-white); color: var(--muted); }
+.empty { background: var(--white); border-color: var(--support-slate-60); }
+.rule-builder, .contact-guide { background: var(--support-cyan-20); }
+.breadboard-checkpoint { border-top: 4px solid var(--cc-green); }
+
+/* The editor stays dark, with legible text and hover states. */
+.code-shell { background: var(--cc-dark-green); border-color: var(--cc-slate); }
+.code-toolbar { background: var(--cc-slate); color: var(--white); }
+.code-toolbar button { color: var(--white); background: transparent; border-color: var(--support-slate-20); }
+.code-toolbar button:hover { background: var(--cc-dark-green); color: var(--white); }
+.code-toolbar button:focus-visible { outline-color: var(--cc-lemon); }
+.code-editor, .dialog-body pre { background: var(--cc-dark-green); color: var(--mint); }
+.code-editor:focus-visible { outline: 3px solid var(--cc-lemon); outline-offset: -3px; }
+.code-caption { color: var(--white); border-color: var(--support-slate-60); }
+.lamp { background: var(--cc-slate); border-color: var(--white); box-shadow: 0 0 0 1px var(--cc-slate); }
+.lamp.lit { background: var(--cc-yellow); box-shadow: 0 0 20px #fedf0099; }
+.servo-arm { background: var(--cc-blue); }
+.buzzer-symbol { color: var(--cc-burgundy); }
+dialog { border-color: var(--line); }
+#notice { background: var(--cc-blue); color: var(--white); }

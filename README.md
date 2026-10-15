@@ -77,10 +77,17 @@ Push updates to `main` to trigger a Pages deployment.
 
 ## Structure and sources
 
+The colour theme follows the supplied [Code Club 2024 brand guide](https://downloads.ctfassets.net/zsyyd4yzh6xx/7HsGhCZYGf8yHdQjYchhV4/5b2738eb4bd50530e51c82e1a6af2b8d/Raspberry_Pi_CodeClub_Guidelines_Web_2024.pdf),
+pages 24–27. Core green, raspberry, pale yellow and blue retain their exact hex
+values; only supporting colours use the permitted 20% and 60% tints. Dark text is
+used on bright green, cyan, pink and yellow; blue buttons use white text.
+The separate theme changes colour only, not layout or stored projects.
+
 - `catalogue.js`: curated component metadata, assigned pins and test fragments.
 - `core.js`: project validation, materials lists and MicroPython composition.
 - `app.js`: learner screens, local state and visual previews.
 - `styles.css`: responsive layout.
+- `theme-codeclub.css`: Code Club palette and accessible colour pairings.
 - `assets/`: existing Skills Bricks component images and Pico wiring diagrams.
 
 The seven component references and pin assignments were checked against Skills
