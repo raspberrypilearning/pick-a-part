@@ -2,15 +2,19 @@ import {catalogue, byId} from './catalogue.js';
 export const VERSION = 1;
 export const STORAGE_KEY = 'toy-workshop-v1';
 export function freshProject() {
-  return {version:VERSION, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], tested:{}, rules:[], nextRule:1, code:'', generated:'', backup:'', build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'idea'};
+  return {version:VERSION, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], tested:{}, rules:[], nextRule:1, code:'', generated:'', backup:'', breadboard:{happy:false}, build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'idea'};
 }
 export const selectedParts = p => catalogue.filter(c => p.selected.includes(c.id));
 export const ideaReady = p => ['when','will','person','looks','play'].every(k => p.idea[k].trim());
 export const ruleEnabled = (p,r) => p.selected.includes(r.input) && r.outputs.length > 0 && r.outputs.every(id => p.selected.includes(id));
 export const activeRules = p => p.rules.filter(r => ruleEnabled(p,r));
-export function readyToFinish(p) {
+export function canTestInteraction(p) {
   const rules=activeRules(p), used=new Set(rules.flatMap(r=>[r.input,...r.outputs]));
-  return Boolean(ideaReady(p) && rules.length && [...used].every(id=>p.tested[id]) && p.code.trim() && p.generated===generateCode(p) && p.build.access && p.build.secure && p.build.retest && p.play.worked && p.play.observed.trim() && p.play.next.trim());
+  return Boolean(rules.length && [...used].every(id=>p.tested[id]) && p.code.trim() && p.generated===generateCode(p));
+}
+export const breadboardReady = p => canTestInteraction(p) && p.breadboard?.happy===true;
+export function readyToFinish(p) {
+  return Boolean(ideaReady(p) && breadboardReady(p) && p.build.access && p.build.secure && p.build.retest && p.play.worked && p.play.observed.trim() && p.play.next.trim());
 }
 export function materials(p) { return [...new Set(['Raspberry Pi Pico with headers','USB data cable','Breadboard','Jumper wires',...selectedParts(p).flatMap(c=>c.materials),'Cardboard / recycled packaging','Tape / reusable fixings'])]; }
 export function modeOptions(input) { return byId[input]?.analogue ? [['threshold','React at a chosen point'],['follow','Follow the changing value']] : [['hold','Respond while held'],['toggle','Switch on / off each time']]; }
@@ -70,6 +74,8 @@ export function validateProject(raw) {
   }
   p.nextRule = Math.max(0,...ruleIds)+1;
   for (const k of ['code','generated','backup']) p[k]=str(raw[k],100000);
+  // Older project files keep their work, but do not imply this new test was done.
+  p.breadboard.happy=raw.breadboard?.happy===true && canTestInteraction(p);
   p.build.body=str(raw.build?.body);
   for (const k of ['access','secure','retest']) p.build[k]=raw.build?.[k]===true;
   for (const k of ['observed','next']) p.play[k]=str(raw.play?.[k]);

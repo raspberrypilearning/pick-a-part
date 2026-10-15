@@ -10,9 +10,21 @@ MicroPython and picozero, supported by [Skills Bricks](https://raspberrypifounda
 1. Describe a moment of play: “When someone…”, “My toy will…”, “I want the person to…”.
 2. Describe the toy's appearance and how someone uses it, using text only.
 3. Choose Detect and Do components by action or component name.
-4. Gather the kit and use each component's wiring, short code example and test.
-5. Connect components with chosen rules and edit the assembled MicroPython starter.
-6. Fabricate the toy, try it with someone, revise it and finish a working version.
+4. Prototype with standard components on a breadboard, testing each part first.
+5. Connect components with chosen rules, edit the MicroPython starter and test the
+   complete breadboard interaction until happy with the response.
+6. Move into physical design: make the body and controls, re-test the assembled
+   toy, try it with someone and revise it.
+
+The button help explains the contact-switch principle: two conductive contacts
+closing can provide the same input as a push button. Foil flaps, squeeze pads and
+lid contacts illustrate how the physical control can suit the toy. The guidance
+retains the existing GP10-to-GND input and distinguishes it from capacitive touch.
+
+A separate, self-reported breadboard checkpoint marks readiness for physical
+making. Changing code, rules or component choices resets it and the later
+assembled-toy test, while preserving design notes. Older saved projects remain
+readable but need this new test confirmed; it is not inferred from old test ticks.
 
 Choices remain editable. Parts chosen for later are kept separate from components
 used in active interactions. Removing a selected part pauses its interaction;

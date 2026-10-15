@@ -12,6 +12,7 @@ try{
  await page.goto(process.env.TEST_URL||'http://127.0.0.1:4173');
  await page.locator('h1').waitFor();
  assert.equal(await page.title(),'Toy workshop · Pick a path');
+ await nav('play');assert.match(await page.locator('.callout.warning').textContent(),/Prototype the interaction first/);
  await nav('parts');await click('parts-next');assert.match(await page.locator('#parts-error').textContent(),/at least one/);
  await nav('idea');await click('example');await page.getByRole('button',{name:'Review my idea'}).click();await page.locator('#confirm-dialog').waitFor({state:'visible'});await click('review-next');
  for(const id of ['button','potentiometer','led','passive-buzzer','servo'])await page.locator(`[data-pick="${id}"]`).click();
@@ -19,13 +20,18 @@ try{
  await page.locator('[data-view="component"]').click();assert.equal(await page.locator('[data-pick="potentiometer"] h3').textContent(),'Potentiometer');
  await click('parts-next');assert.equal(await page.locator('[data-have="USB data cable"]').count(),1);assert.equal(await page.locator('[data-have="4 × AA NiMH cells + holder"]').count(),1);
  await click('parts-workbench');
- for(const id of ['button','led']){await page.locator(`.part-row [data-brick="${id}"]`).click();await page.locator(`[data-tested="${id}"]`).check();await click('close-brick');}
+ for(const id of ['button','led']){await page.locator(`.part-row [data-brick="${id}"]`).click();if(id==='button'){assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/two conductive contacts/);assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/Squeeze a pad/);await page.locator('#brick-dialog .contact-guide summary').click();assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/GP10 \(physical pin 14\)/);await page.screenshot({path:'outputs/prototype-button-help.png',fullPage:true});}await page.locator(`[data-tested="${id}"]`).check();await click('close-brick');}
  await page.reload();assert.match(await page.locator('[data-make-tab="parts"]').textContent(),/2\/5/);
  await click('code-workbench');await page.locator('[data-draft-output="led"]').check();await page.getByRole('button',{name:'Add to my code'}).click();
  await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/active/);await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/resting/);
+ assert.equal(await page.locator('#breadboard-happy').isChecked(),false,'preview is not a hardware test');
+ assert.equal(await page.locator('#breadboard-next').isEnabled(),false);
+ await page.locator('#breadboard-happy').check();assert.equal(await page.locator('#breadboard-next').isEnabled(),true);
  await page.locator('#rule-input').selectOption('potentiometer');await page.locator('#rule-mode').selectOption('follow');
  for(const id of ['passive-buzzer','servo'])await page.locator(`[data-draft-output="${id}"]`).check();
  await page.getByRole('button',{name:'Add to my code'}).click();
+ assert.equal(await page.locator('#breadboard-happy').isChecked(),false,'adding an interaction asks for another test');
+ assert.equal(await page.locator('#breadboard-happy').isEnabled(),false,'untested active components need their tests first');
  const code=await page.locator('#code-editor').inputValue();assert.equal((code.match(/from picozero import/g)||[]).length,1);assert.match(code,/Pot\(26\)/);assert.match(code,/Servo\(7\)/);
  await page.locator('#preview-value').fill('0.8');assert.match(await page.locator('#preview-state').textContent(),/0.80/);
  await page.screenshot({path:'outputs/prototype-code.png',fullPage:true});
@@ -35,7 +41,15 @@ try{
  await click('regenerate');await page.getByRole('button',{name:'Keep draft & rebuild'}).click();
  assert.doesNotMatch(await page.locator('#code-editor').inputValue(),/Pot\(26\)/);assert.equal(await page.getByRole('button',{name:'Restore previous code draft'}).count(),1);
  const stored=JSON.parse(await page.evaluate(()=>localStorage.getItem('toy-workshop-v1')));assert.match(stored.backup,/# My own change/);assert.equal(stored.tested.servo,false);
+ await page.locator('#breadboard-happy').check();
+ await page.locator('#code-editor').fill((await page.locator('#code-editor').inputValue())+'\n# A new test change\n');
+ assert.equal(await page.locator('#breadboard-happy').isChecked(),false,'code edits invalidate the complete interaction test');
+ assert.equal(await page.locator('#breadboard-next').isEnabled(),false);
+ await page.locator('#breadboard-happy').check();
+ await page.reload();await page.locator('[data-make-tab="code"]').click();assert.equal(await page.locator('#breadboard-happy').isChecked(),true);
  await nav('play');await page.locator('#build-body').fill('A cardboard creature. The button is its nose.');
+ assert.equal(await page.locator('.callout.warning').count(),0);assert.match(await page.locator('.contact-guide').textContent(),/Close a lid/);
+ await page.screenshot({path:'outputs/prototype-physical-design.png',fullPage:true});
  for(const key of ['access','secure','retest'])await page.locator(`[data-section="build"][data-key="${key}"]`).check();
  await page.locator('#play-observed').fill('They pressed its nose, laughed and pressed it again.');await page.locator('#play-next').fill('Keep the eyes; save the knob idea for next time.');await page.locator('[data-section="play"][data-key="worked"]').check();
  await nav('finish');await page.locator('#toy-name').fill('Nosey');assert.equal(await page.locator('[data-action="finish"]').isEnabled(),true);
@@ -44,6 +58,11 @@ try{
  assert.match(await page.locator('.completion h2').textContent(),/saved/);
  await page.reload();assert.equal(await page.locator('#toy-name').inputValue(),'Nosey');
  await page.locator('#project-file').setInputFiles('outputs/test-project.json');await page.getByRole('button',{name:'Open saved project'}).click();assert.equal(await page.locator('#toy-name').inputValue(),'Nosey');
+ await nav('make');await page.locator('[data-make-tab="code"]').click();
+ await page.locator('#code-editor').fill((await page.locator('#code-editor').inputValue())+'\n# Revise after play\n');
+ await nav('play');assert.match(await page.locator('.callout.warning').textContent(),/Prototype the interaction first/);assert.equal(await page.locator('#build-body').inputValue(),'A cardboard creature. The button is its nose.');
+ assert.equal(await page.locator('[data-section="build"][data-key="retest"]').isChecked(),false);
+ assert.equal(await page.locator('[data-section="play"][data-key="worked"]').isChecked(),false);
  // Test stored learner text as data, not markup.
  await nav('idea');await page.locator('#idea-when').fill('<img src=x onerror="window.injection=true">');assert.equal(await page.locator('#concept-summary img').count(),0);assert.equal(await page.evaluate(()=>window.injection),undefined);
  // Every screen reflows at phone and desktop widths, without page overflow.

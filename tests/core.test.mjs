@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {catalogue,testCode} from '../catalogue.js';
-import {freshProject,generateCode,validateProject,activeRules,materials,modeOptions,readyToFinish} from '../core.js';
+import {freshProject,generateCode,validateProject,activeRules,materials,modeOptions,canTestInteraction,breadboardReady,readyToFinish} from '../core.js';
 const projectWith=(input,outputs,mode,extra={})=>{const p=freshProject();p.selected=[input,...outputs];p.rules=[{id:1,input,outputs,mode,threshold:.5,direction:'above',...extra}];return p;};
 test('pin assignments are unique; PWM outputs do not share a slice',()=>{
  assert.equal(new Set(catalogue.map(c=>c.pin)).size,catalogue.length);
@@ -27,7 +27,24 @@ test('invalid imports and conflicting outputs are rejected',()=>{
  assert.throws(()=>validateProject({version:4}));const p=projectWith('button',['led'],'hold');p.rules.push({...p.rules[0],id:2});assert.throws(()=>validateProject(p),/conflicting/);p.rules=[{...p.rules[0],input:'bad'}];assert.throws(()=>validateProject(p));
 });
 test('finishing needs concept, real testing and play observations',()=>{
- const p=projectWith('button',['led'],'hold');assert.equal(Boolean(readyToFinish(p)),false);Object.assign(p.idea,{when:'Press',will:'Glow',person:'Laugh',looks:'Box',play:'Press nose'});p.code=generateCode(p);p.generated=p.code;p.build={body:'Cardboard',access:true,secure:true,retest:true};p.play={worked:true,observed:'They pressed again',next:'Keep the nose'};assert.equal(readyToFinish(p),false);p.tested.button=true;p.tested.led=true;assert.ok(readyToFinish(p));
+ const p=projectWith('button',['led'],'hold');assert.equal(Boolean(readyToFinish(p)),false);Object.assign(p.idea,{when:'Press',will:'Glow',person:'Laugh',looks:'Box',play:'Press nose'});p.code=generateCode(p);p.generated=p.code;p.build={body:'Cardboard',access:true,secure:true,retest:true};p.play={worked:true,observed:'They pressed again',next:'Keep the nose'};assert.equal(readyToFinish(p),false);p.tested.button=true;p.tested.led=true;assert.equal(readyToFinish(p),false);p.breadboard.happy=true;assert.ok(readyToFinish(p));
+});
+test('breadboard checkpoint is distinct from individual component tests',()=>{
+ const p=projectWith('button',['led'],'hold');p.code=p.generated=generateCode(p);p.tested.button=p.tested.led=true;
+ assert.equal(canTestInteraction(p),true);assert.equal(breadboardReady(p),false);
+ p.breadboard.happy=true;assert.equal(breadboardReady(p),true);
+ p.selected.push('servo');assert.equal(breadboardReady(p),true,'unused parts do not need a component test');
+ p.tested.led=false;assert.equal(breadboardReady(p),false);
+ p.tested.led=true;p.rules[0].mode='toggle';assert.equal(breadboardReady(p),false,'stale code must not count');
+});
+test('legacy projects preserve work without inventing a breadboard test',()=>{
+ const p=projectWith('button',['led'],'hold');p.code=p.generated=generateCode(p);p.tested.button=p.tested.led=true;p.build.body='My foil flap';p.play.observed='They squeezed it';p.completed=true;delete p.breadboard;
+ const restored=validateProject(p);assert.equal(restored.breadboard.happy,false);assert.equal(restored.completed,false);assert.equal(restored.build.body,p.build.body);assert.equal(restored.code,p.code);assert.equal(restored.play.observed,p.play.observed);
+});
+test('new projects round-trip their valid breadboard checkpoint',()=>{
+ const p=projectWith('button',['led'],'hold');p.code=p.generated=generateCode(p);p.tested.button=p.tested.led=true;p.breadboard.happy=true;
+ assert.equal(breadboardReady(validateProject(p)),true);
+ p.tested.button=false;assert.equal(validateProject(p).breadboard.happy,false);
 });
 test('every supported starter and component test is valid Python',()=>{
  const cases=[];for(const input of catalogue.filter(c=>c.kind==='detect'))for(const [mode] of modeOptions(input.id))for(const output of catalogue.filter(c=>c.kind==='do'))cases.push(generateCode(projectWith(input.id,[output.id],mode)));
