@@ -4,6 +4,13 @@ import {spawnSync} from 'node:child_process';
 import {catalogue,testCode} from '../catalogue.js';
 import {freshProject,generateCode,validateProject,activeRules,materials,modeOptions,canTestInteraction,breadboardReady,readyToFinish} from '../core.js';
 const projectWith=(input,outputs,mode,extra={})=>{const p=freshProject();p.selected=[input,...outputs];p.rules=[{id:1,input,outputs,mode,threshold:.5,direction:'above',...extra}];return p;};
+test('new projects open on the journey overview and saved pages are preserved',()=>{
+ assert.equal(freshProject().page,'journey');
+ for(const page of ['journey','idea','parts','make','play','finish']){
+  assert.equal(validateProject({...freshProject(),page}).page,page);
+ }
+ assert.equal(validateProject({...freshProject(),page:'unknown'}).page,'journey');
+});
 test('pin assignments are unique; PWM outputs do not share a slice',()=>{
  assert.equal(new Set(catalogue.map(c=>c.pin)).size,catalogue.length);
  const pins=catalogue.filter(c=>c.kind==='do').map(c=>Math.floor(c.pin/2)%8);assert.equal(new Set(pins).size,pins.length);

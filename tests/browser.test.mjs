@@ -12,6 +12,14 @@ try{
  await page.goto(process.env.TEST_URL||'http://127.0.0.1:4173');
  await page.locator('h1').waitFor();
  assert.equal(await page.title(),'Toy workshop · Pick a path');
+ assert.deepEqual(await page.locator('.navlist button').evaluateAll(buttons=>buttons.map(b=>b.dataset.action)),['nav-journey','nav-idea','nav-parts','nav-make','nav-play','nav-finish']);
+ assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
+ assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'01 / Your journey');
+ await page.getByRole('button',{name:'Start with my idea',exact:true}).click();
+ assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'02 / Imagine');
+ await page.reload();assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-idea','returning projects keep their saved page');
+ await page.locator('.brand').click();assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
+ await nav('parts');assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'03 / Choose');
  await nav('play');assert.match(await page.locator('.callout.warning').textContent(),/Prototype the interaction first/);
  await nav('parts');await click('parts-next');assert.match(await page.locator('#parts-error').textContent(),/at least one/);
  await nav('idea');await click('example');await page.getByRole('button',{name:'Review my idea'}).click();await page.locator('#confirm-dialog').waitFor({state:'visible'});await click('review-next');
@@ -68,7 +76,7 @@ try{
  // Every screen reflows at phone and desktop widths, without page overflow.
  for(const width of [1440,768,390,320]){
   await page.setViewportSize({width,height:900});
-  for(const id of ['idea','parts','journey','make','play','finish']){
+  for(const id of ['journey','idea','parts','make','play','finish']){
    await nav(id);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);assert.equal(overflow,false,`${id} overflows at ${width}px`);
   }
  }

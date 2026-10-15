@@ -2,7 +2,7 @@ import {catalogue, byId} from './catalogue.js';
 export const VERSION = 1;
 export const STORAGE_KEY = 'toy-workshop-v1';
 export function freshProject() {
-  return {version:VERSION, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], tested:{}, rules:[], nextRule:1, code:'', generated:'', backup:'', breadboard:{happy:false}, build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'idea'};
+  return {version:VERSION, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], tested:{}, rules:[], nextRule:1, code:'', generated:'', backup:'', breadboard:{happy:false}, build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'journey'};
 }
 export const selectedParts = p => catalogue.filter(c => p.selected.includes(c.id));
 export const ideaReady = p => ['when','will','person','looks','play'].every(k => p.idea[k].trim());
@@ -80,7 +80,7 @@ export function validateProject(raw) {
   for (const k of ['access','secure','retest']) p.build[k]=raw.build?.[k]===true;
   for (const k of ['observed','next']) p.play[k]=str(raw.play?.[k]);
   p.play.worked=raw.play?.worked===true;
-  p.page=['idea','parts','journey','make','play','finish'].includes(raw.page)?raw.page:'idea';
+  p.page=['journey','idea','parts','make','play','finish'].includes(raw.page)?raw.page:p.page;
   p.completed=raw.completed===true && Boolean(readyToFinish(p));
   return p;
 }

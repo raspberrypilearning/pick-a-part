@@ -7,6 +7,11 @@ MicroPython and picozero, supported by [Skills Bricks](https://raspberrypifounda
 
 ## Learner journey
 
+“Your journey” is the first navigation item and the overview shown to new
+projects. It offers a “Start with my idea” action before any choices have been
+made. Returning projects reopen their last visited page; the workshop title
+always returns to the overview.
+
 1. Describe a moment of play: “When someone…”, “My toy will…”, “I want the person to…”.
 2. Describe the toy's appearance and how someone uses it, using text only.
 3. Choose Detect and Do components by action or component name.
