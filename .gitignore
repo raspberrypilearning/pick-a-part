@@ -1,0 +1,8 @@
+node_modules/
+outputs/
+.local/
+PROTOTYPE.txt
+.DS_Store
+._*
+*.log
+__pycache__/

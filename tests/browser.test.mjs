@@ -1,0 +1,64 @@
+const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
+import assert from 'node:assert/strict';
+import {readFile,mkdir} from 'node:fs/promises';
+await mkdir('outputs',{recursive:true});
+const browser=await chromium.launch({headless:true});
+const context=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true});
+const page=await context.newPage();
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const click=action=>page.locator(`[data-action="${action}"]`).first().click();
+const nav=id=>page.locator(`.navlist [data-action="nav-${id}"]`).click();
+try{
+ await page.goto(process.env.TEST_URL||'http://127.0.0.1:4173');
+ await page.locator('h1').waitFor();
+ assert.equal(await page.title(),'Toy workshop · Pick a path');
+ await nav('parts');await click('parts-next');assert.match(await page.locator('#parts-error').textContent(),/at least one/);
+ await nav('idea');await click('example');await page.getByRole('button',{name:'Review my idea'}).click();await page.locator('#confirm-dialog').waitFor({state:'visible'});await click('review-next');
+ for(const id of ['button','potentiometer','led','passive-buzzer','servo'])await page.locator(`[data-pick="${id}"]`).click();
+ await page.screenshot({path:'outputs/prototype-parts.png',fullPage:true});
+ await page.locator('[data-view="component"]').click();assert.equal(await page.locator('[data-pick="potentiometer"] h3').textContent(),'Potentiometer');
+ await click('parts-next');assert.equal(await page.locator('[data-have="USB data cable"]').count(),1);assert.equal(await page.locator('[data-have="4 × AA NiMH cells + holder"]').count(),1);
+ await click('parts-workbench');
+ for(const id of ['button','led']){await page.locator(`.part-row [data-brick="${id}"]`).click();await page.locator(`[data-tested="${id}"]`).check();await click('close-brick');}
+ await page.reload();assert.match(await page.locator('[data-make-tab="parts"]').textContent(),/2\/5/);
+ await click('code-workbench');await page.locator('[data-draft-output="led"]').check();await page.getByRole('button',{name:'Add to my code'}).click();
+ await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/active/);await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/resting/);
+ await page.locator('#rule-input').selectOption('potentiometer');await page.locator('#rule-mode').selectOption('follow');
+ for(const id of ['passive-buzzer','servo'])await page.locator(`[data-draft-output="${id}"]`).check();
+ await page.getByRole('button',{name:'Add to my code'}).click();
+ const code=await page.locator('#code-editor').inputValue();assert.equal((code.match(/from picozero import/g)||[]).length,1);assert.match(code,/Pot\(26\)/);assert.match(code,/Servo\(7\)/);
+ await page.locator('#preview-value').fill('0.8');assert.match(await page.locator('#preview-state').textContent(),/0.80/);
+ await page.screenshot({path:'outputs/prototype-code.png',fullPage:true});
+ await page.locator('#code-editor').fill(code+'\n# My own change\n');
+ await nav('parts');await page.locator('[data-pick="potentiometer"]').click();await nav('make');await page.locator('[data-make-tab="code"]').click();
+ assert.match(await page.locator('#code-editor').inputValue(),/# My own change/);assert.equal(await page.locator('.rule-card.suspended').count(),1);
+ await click('regenerate');await page.getByRole('button',{name:'Keep draft & rebuild'}).click();
+ assert.doesNotMatch(await page.locator('#code-editor').inputValue(),/Pot\(26\)/);assert.equal(await page.getByRole('button',{name:'Restore previous code draft'}).count(),1);
+ const stored=JSON.parse(await page.evaluate(()=>localStorage.getItem('toy-workshop-v1')));assert.match(stored.backup,/# My own change/);assert.equal(stored.tested.servo,false);
+ await nav('play');await page.locator('#build-body').fill('A cardboard creature. The button is its nose.');
+ for(const key of ['access','secure','retest'])await page.locator(`[data-section="build"][data-key="${key}"]`).check();
+ await page.locator('#play-observed').fill('They pressed its nose, laughed and pressed it again.');await page.locator('#play-next').fill('Keep the eyes; save the knob idea for next time.');await page.locator('[data-section="play"][data-key="worked"]').check();
+ await nav('finish');await page.locator('#toy-name').fill('Nosey');assert.equal(await page.locator('[data-action="finish"]').isEnabled(),true);
+ const downloading=page.waitForEvent('download');await click('finish');const download=await downloading;await download.saveAs('outputs/test-project.json');
+ assert.equal(JSON.parse(await readFile('outputs/test-project.json','utf8')).completed,true);
+ assert.match(await page.locator('.completion h2').textContent(),/saved/);
+ await page.reload();assert.equal(await page.locator('#toy-name').inputValue(),'Nosey');
+ await page.locator('#project-file').setInputFiles('outputs/test-project.json');await page.getByRole('button',{name:'Open saved project'}).click();assert.equal(await page.locator('#toy-name').inputValue(),'Nosey');
+ // Test stored learner text as data, not markup.
+ await nav('idea');await page.locator('#idea-when').fill('<img src=x onerror="window.injection=true">');assert.equal(await page.locator('#concept-summary img').count(),0);assert.equal(await page.evaluate(()=>window.injection),undefined);
+ // Every screen reflows at phone and desktop widths, without page overflow.
+ for(const width of [1440,768,390,320]){
+  await page.setViewportSize({width,height:900});
+  for(const id of ['idea','parts','journey','make','play','finish']){
+   await nav(id);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);assert.equal(overflow,false,`${id} overflows at ${width}px`);
+  }
+ }
+ await nav('parts');await page.screenshot({path:'outputs/prototype-mobile.png',fullPage:true});
+ await page.locator('[data-brick="servo"]').first().click();assert.equal(await page.locator('#brick-dialog').isVisible(),true);await page.keyboard.press('Escape');assert.equal(await page.locator('#brick-dialog').isVisible(),false);
+ // Bad saved-file data leaves the current project untouched.
+ const before=await page.evaluate(()=>localStorage.getItem('toy-workshop-v1'));
+ await page.locator('#project-file').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{"version":4}')});
+ assert.equal(await page.evaluate(()=>localStorage.getItem('toy-workshop-v1')),before);
+ assert.equal(errors.length,0,errors.join('\n'));
+ console.log('PASS: end-to-end journey; parts/code propagation; 2 interactions; preview; edited-code preservation; paused rules; completion; save/import; escaped text; 24 responsive page checks; modal keyboard handling; invalid import; no browser runtime errors.');
+}finally{await browser.close();}
