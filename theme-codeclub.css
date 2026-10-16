@@ -126,6 +126,10 @@ dialog { border-color: var(--line); }
 #setup-dialog .dialog-body p{font-size:14px}
 #setup-dialog .setup-intro{font-size:16px;margin-top:0}
 #setup-dialog .making-steps h3{font-size:17px;margin-top:0}
+#setup-dialog .setup-figure{margin:16px 0 24px;max-width:100%}
+#setup-dialog .setup-figure img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:white}
+#setup-dialog .setup-figure figcaption{font-size:12px;line-height:1.6;color:var(--muted);margin-top:6px}
+#setup-dialog .setup-image-link{display:inline-block;margin-top:6px;font-size:12px;text-decoration:underline;text-underline-offset:3px}
 #setup-dialog .setup-return{border-top:1px solid var(--line);margin-top:24px;padding-top:20px}
 #setup-status:empty{display:none}
 #setup-status{padding:12px;background:var(--mint);border-radius:8px}

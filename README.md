@@ -31,6 +31,13 @@ return focus to the original help button; guides can link to one another within
 the same dialog. Installation advice links to the official documentation, asks
 learners to protect existing board files and skips reinstalling a working setup.
 The picozero guide includes the same copyable/downloadable check as the page.
+Connection and troubleshooting help explicitly locate the interpreter selector
+at the bottom right of Thonny. Setup popups reuse five connection/package images
+from LED firefly and one interpreter screenshot from the picozero documentation,
+with alt text, captions, full-size links and source credits. Screenshots are
+labelled where their older version or example port could mislead; the outdated
+firefly firmware-install screenshot is not used. See
+[`assets/setup/README.md`](assets/setup/README.md) for sources and licences.
 
 The map alone numbers these six stages. Navigation and page headings use the same
 names without competing step numbers; Your journey remains the first overview.
