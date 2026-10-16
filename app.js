@@ -5,6 +5,7 @@ import {freshProject,STORAGE_KEY,validateProject,selectedParts,ideaReady,ruleEna
 import {pages,setupTest as picoSetupTest,journeyContent,readyContent,suggestions,assemblyGuide,troubleshooting,codeHelp,pinGuide} from './guidance.js';
 import {partsContent} from './chooser.js';
 import {SoundPreview} from './sound.js';
+import {setupHelpContent} from './pico-setup.js';
 const app=document.querySelector('#app');
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let project=freshProject(), storageWorks=true, loadMessage='';
@@ -15,6 +16,25 @@ const testCode=id=>componentTestCode(id,project.platform);
 const brickUrl=id=>sourceBrickUrl(id,project.platform);
 const rangeFor=id=>componentRange(id,project.platform);
 const setupTest=()=>project.platform==='pi'?piSetupTest:picoSetupTest;
+const setupDialog=document.querySelector('#setup-dialog');
+let setupOpener=null;
+function showSetupHelp(topic,opener){
+ if(project.platform!=='pico')return;
+ const content=setupHelpContent(topic,picoSetupTest);if(!content)return;
+ if(!setupDialog.open)setupOpener=opener;
+ setupDialog.innerHTML=content;
+ if(!setupDialog.open)setupDialog.showModal();
+ setupDialog.scrollTop=0;
+ setupDialog.querySelector('#setup-title').focus({preventScroll:true});
+}
+setupDialog.addEventListener('close',()=>{if(setupOpener?.isConnected)setupOpener.focus({preventScroll:true});setupOpener=null;});
+async function copySetupCheck(){
+ const status=setupDialog.querySelector('#setup-status');
+ let message;
+ try{await navigator.clipboard.writeText(picoSetupTest);message='Copied. Paste the check into a new Thonny file.';}
+ catch{message='Clipboard unavailable. Select the code to copy it, or download the setup check.';}
+ if(status?.isConnected&&setupDialog.open)status.textContent=message;
+}
 let chooseBy='action',makeTab='parts', draft={input:'',outputs:[],mode:'hold',threshold:0.5,direction:'above'}, previewRule=null, previewValues={},previewToggle={},noticeTimer;
 let draftKey='';
 const openPartGroups=new Set();
@@ -95,6 +115,7 @@ document.addEventListener('click',e=>{
   return;
  }
  if(b.dataset.retest){const id=b.dataset.retest;project.tested[id]=false;invalidate();save();render();showBrick(id);return;}
+ if(b.dataset.setupHelp){showSetupHelp(b.dataset.setupHelp,b);return;}
  if(b.dataset.pick){togglePart(b.dataset.pick);return;}
  if(b.dataset.brick){showBrick(b.dataset.brick);return;}
  if(b.dataset.view){chooseBy=b.dataset.view;render();return;}
@@ -108,6 +129,7 @@ document.addEventListener('click',e=>{
  if(action.startsWith('nav-')){go(action.slice(4));return;}
  if(action==='close-brick')document.querySelector('#brick-dialog').close();
  if(action==='close-confirm')document.querySelector('#confirm-dialog').close();
+ if(action==='close-setup')setupDialog.close();
  if(action==='review-next'){document.querySelector('#confirm-dialog').close();go('parts');}
  if(action==='export')exportProject();
  if(action==='import')document.querySelector('#project-file').click();
@@ -119,7 +141,10 @@ document.addEventListener('click',e=>{
  if(action==='parts-workbench'||action==='code-workbench'){makeTab=action==='parts-workbench'?'parts':'code';go('make');}
  if(action==='troubleshoot'){makeTab='help';go('make');}
  if(action==='suggest-parts'){let skipped=0;for(const {id} of suggestedParts(project)){if(project.selected.includes(id))continue;if(conflictsFor(project,id).length){skipped++;continue;}project.selected.push(id);}refreshStarter();render();toast(skipped?'Compatible suggestions added. Choose an alternative card separately if you want to swap parts.':'Suggestions added. Change or remove any part.');}
- if(action==='copy-setup')copy(setupTest());
+ if(action==='copy-setup'){
+  if(setupDialog.open)copySetupCheck();
+  else copy(setupTest());
+ }
  if(action==='download-setup')download(`check_${project.platform}.py`,setupTest(),'text/x-python');
  if(action==='preview-sound'){const r=activeRules(project).find(r=>r.id===previewRule);if(r)sound.play(previewResponse(r,previewValues[r.id]??rangeFor(r.input).min,previewToggle[r.id]).frequency);}
  if(action==='mute-sound')sound.stop();

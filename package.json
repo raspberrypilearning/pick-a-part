@@ -10,6 +10,7 @@
     "test:catalogue": "node tests/catalogue.test.mjs",
     "optimise:images": "node scripts/optimise-images.mjs",
     "test:platform": "node tests/platform-browser.test.mjs",
+    "test:setup": "node tests/setup-browser.test.mjs",
     "test:pi-runtime": "node tests/pi-runtime.mjs"
   },
   "engines": {

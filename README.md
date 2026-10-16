@@ -23,6 +23,14 @@ always returns to the overview.
    invite someone to play and revise it.
 6. **This version:** name and save a working version, keeping ideas for later.
 
+Pico Get ready has optional setup popups for Thonny, MicroPython, picozero,
+connection problems and import errors. Each guide gives concrete steps without
+changing project data or marking a check complete. Escape and both close buttons
+return focus to the original help button; guides can link to one another within
+the same dialog. Installation advice links to the official documentation, asks
+learners to protect existing board files and skips reinstalling a working setup.
+The picozero guide includes the same copyable/downloadable check as the page.
+
 The map alone numbers these six stages. Navigation and page headings use the same
 names without competing step numbers; Your journey remains the first overview.
 
@@ -159,6 +167,7 @@ npm run test:browser
 npm run test:feedback
 npm run test:catalogue
 npm run test:platform
+npm run test:setup
 ```
 
 Set `TEST_URL` to test a deployed instance, or `PYTHON` to select the Python
@@ -184,6 +193,7 @@ used on bright green, cyan, pink and yellow; blue buttons use white text.
 The separate theme changes colour only, not layout or stored projects.
 
 - `catalogue.js`: curated component metadata, assigned pins and test fragments.
+- `pico-setup.js`: optional detailed Pico setup guides and troubleshooting popups.
 - `extra-bricks.js`: the remaining Pico components and Pi-only reference entries.
 - `chooser.js`: explained matches, selected parts and expandable alternatives.
 - `pi-source.js`: maintained Raspberry Pi reference text, example code and image names.
