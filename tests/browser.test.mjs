@@ -21,16 +21,22 @@ try{
  assert.deepEqual(await page.locator('.navlist button').evaluateAll(buttons=>buttons.map(b=>b.dataset.action)),['nav-journey','nav-idea','nav-parts','nav-ready','nav-make','nav-play','nav-finish']);
  assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
  assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'Your journey');
+ assert.match(await page.locator('body').innerText(),/Choose what it detects and how it responds/);
  await page.getByRole('button',{name:'Start with my idea',exact:true}).click();
  assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'Your idea');
  await page.reload();assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-idea','returning projects keep their saved page');
  await page.locator('.brand').click();assert.equal(await page.locator('.navitem[aria-current="page"]').getAttribute('data-action'),'nav-journey');
  await nav('parts');assert.equal(await page.locator('.workspace-head .eyebrow').textContent(),'Choose parts');
+ assert.equal(await page.getByRole('heading',{name:'What does it detect?',exact:true}).count(),1);
+ assert.match(await page.locator('.kit-group-label').first().textContent(),/What it detects/);
  await nav('play');assert.match(await page.locator('.callout.warning').textContent(),/Prototype the interaction first/);
  contrastChecks+=await checkTextContrast(page);
  await nav('parts');await click('parts-next');assert.match(await page.locator('#parts-error').textContent(),/at least one/);
+ assert.match(await page.locator('#parts-error').textContent(),/one thing to detect/);
  contrastChecks+=await checkTextContrast(page);
- await nav('idea');await click('example');await page.getByRole('button',{name:'Review my idea'}).click();await page.locator('#confirm-dialog').waitFor({state:'visible'});await click('review-next');
+ await nav('idea');await click('example');await page.getByRole('button',{name:'Review my idea'}).click();await page.locator('#confirm-dialog').waitFor({state:'visible'});
+ assert.match(await page.locator('[data-action="review-next"]').textContent(),/Choose what it detects & does/);
+ await click('review-next');
  for(const id of ['button','potentiometer','led','passive-buzzer','servo'])await page.locator(`[data-pick="${id}"]`).click();
  await page.screenshot({path:'outputs/prototype-parts.png',fullPage:true});
  await page.locator('[data-view="component"]').click();assert.equal(await page.locator('[data-pick="potentiometer"] h3').textContent(),'Potentiometer');
@@ -38,7 +44,8 @@ try{
  await click('parts-workbench');
  for(const id of ['button','led']){await page.locator(`.part-row [data-brick="${id}"]`).click();if(id==='button'){assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/two conductive contacts/);assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/Squeeze a pad/);await page.locator('#brick-dialog .contact-guide summary').click();assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/GP10 \(physical pin 14\)/);await page.screenshot({path:'outputs/prototype-button-help.png',fullPage:true});}await page.locator(`[data-tested="${id}"]`).check();await click('close-brick');}
  await page.reload();assert.match(await page.locator('[data-make-tab="parts"]').textContent(),/2\/5/);
- await click('code-workbench');await page.locator('[data-draft-output="led"]').check();await page.getByRole('button',{name:'Add to my code'}).click();
+ await click('code-workbench');assert.equal(await page.getByLabel('What detects?',{exact:true}).count(),1);
+ await page.locator('[data-draft-output="led"]').check();await page.getByRole('button',{name:'Add to my code'}).click();
  await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/active/);await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/resting/);
  assert.equal(await page.locator('#breadboard-happy').isChecked(),false,'preview is not a hardware test');
  assert.equal(await page.locator('#breadboard-next').isEnabled(),true);assert.match(await page.locator('#breadboard-next').textContent(),/Explore physical design/);
@@ -88,6 +95,7 @@ try{
   await page.setViewportSize({width,height:900});
   for(const id of ['journey','idea','parts','ready','make','play','finish']){
    await nav(id);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);assert.equal(overflow,false,`${id} overflows at ${width}px`);
+   assert.doesNotMatch(await page.locator('body').innerText(),/\bnotic(?:e|es|ed|ing)\b/i,`${id} should use Detect terminology`);
    contrastChecks+=await checkTextContrast(page);
   }
  }
