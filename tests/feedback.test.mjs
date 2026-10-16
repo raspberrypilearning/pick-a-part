@@ -78,7 +78,7 @@ try{
   for(const id of ['journey','ready','play','make']){await nav(id);await checkTextContrast(page);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`${id} overflows at ${width}`);if(width===390&&id==='ready')await page.screenshot({path:'outputs/feedback-ready-mobile.png',fullPage:true});}
  }
  let thumbs=0,all=0;for(const c of catalogue)for(const kind of ['components','wiring']){const size=(await stat(`assets/${kind}/${c.id}.webp`)).size;all+=size;if(kind==='components')thumbs+=size;}
- assert.ok(thumbs<200000,`Thumbnails too large: ${thumbs}`);assert.ok(all<1000000,`Runtime images too large: ${all}`);
+ assert.ok(thumbs<catalogue.length*30000,`Thumbnails too large: ${thumbs}`);assert.ok(all<catalogue.length*140000,`Runtime images too large: ${all}`);
  assert.deepEqual(failures,[]);assert.deepEqual(errors,[]);
  console.log(`PASS: cereal-box sound-toy journey; optional hints; setup; labelled pins; audio start/stop/timeout; tailored pitch help; no-kit exploration; fault finding; retest; save/import; responsive checks. Images: ${thumbs} bytes of thumbnails, ${all} bytes total.`);
 }finally{await browser.close();}

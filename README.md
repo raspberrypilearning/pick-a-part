@@ -43,6 +43,43 @@ Choices remain editable. Parts chosen for later are kept separate from component
 used in active interactions. Removing a selected part pauses its interaction;
 rebuilding code keeps the previous draft.
 
+## Full Skills Bricks catalogue
+
+All 21 maintained Pico bricks are available: 12 Detect and 9 Do. Likely matches
+from the learner's interaction and response text appear first, with a short
+explanation quoting the matching word. Play instructions and appearance notes
+also supply hints. Nothing is selected until the learner chooses it.
+
+Unmatched options sit inside **More Detect parts** and **More Do parts**.
+Selecting an extra moves it into the visible collection; changing the idea never
+hides or removes chosen parts. With no match, Button and LED are labelled as
+simple starting points. Expanded sections stay open while changing choices.
+The two Raspberry Pi-only bricks (Pi Camera and Robot / rover) have a separate
+reference section and cannot be mistaken for Pico-compatible components.
+
+The source's pin-sharing groups are enforced: one sounder (active buzzer,
+passive buzzer or speaker), one PIR type (AM312 or HC-SR501), and one motor-drive
+option (motor driver or stepper). Choosing an alternative asks before replacing
+the selected part, pauses its old interactions, clears its test and preserves
+edited code. Bulk suggestions never silently replace a conflicting choice.
+
+Each Pico part has its matching wiring, material list, individual test, physical
+making advice, pin reference and generated response. Temperature thresholds use
+degrees Celsius; Follow maps −10–50 °C to 0–1. Distance uses 0–1 metre and missing
+echoes rest the outputs. The DS18B20 helper refreshes cached readings without
+blocking each interaction loop. NeoPixel and DS18B20 use built-in MicroPython
+modules; other parts use picozero. Stepper requires a recent picozero version.
+
+New images are copied from the maintained source's rendered `dist/` assets:
+
+```sh
+node scripts/import-brick-assets.mjs /path/to/skills-bricks
+npm run optimise:images
+```
+
+The import preserves existing originals. No source card or wiring was modified.
+Pins follow the owner-approved `breadboard/PIN-MAP.md` in the source bundle.
+
 ## Feedback-led support
 
 - Physical-making guidance covers openings, breadboard support, wire slack and
@@ -60,8 +97,8 @@ rebuilding code keeps the previous draft.
   Pico reference. Pin assignments and original diagrams are unchanged.
 - A prominent save-copy reminder explains shared-computer storage. Setup checks
   migrate into older saves as unchecked; existing work is retained.
-- Runtime WebP images total about 738 kB, including 122 kB for all seven component
-  thumbnails, versus 11.7 MB for the originals. The original PNG diagrams remain
+- Runtime WebP images total about 2.33 MB, including all 23 component thumbnails,
+  versus 39.7 MB for the originals. The original PNG diagrams remain
   linked at full size. Regenerate derivatives with `npm run optimise:images`.
 
 ## Run locally
@@ -93,6 +130,7 @@ npm start
 # In another terminal:
 npm run test:browser
 npm run test:feedback
+npm run test:catalogue
 ```
 
 Set `TEST_URL` to test a deployed instance, or `PYTHON` to select the Python
@@ -114,6 +152,8 @@ used on bright green, cyan, pink and yellow; blue buttons use white text.
 The separate theme changes colour only, not layout or stored projects.
 
 - `catalogue.js`: curated component metadata, assigned pins and test fragments.
+- `extra-bricks.js`: the remaining Pico components and Pi-only reference entries.
+- `chooser.js`: explained matches, selected parts and expandable alternatives.
 - `core.js`: project validation, materials lists and MicroPython composition.
 - `app.js`: learner screens, local state and visual previews.
 - `guidance.js`: setup, assembly, troubleshooting, pin reference and tailored help.
@@ -123,8 +163,8 @@ The separate theme changes colour only, not layout or stored projects.
 - `assets/`: existing Skills Bricks component images and Pico wiring diagrams.
 - `scripts/optimise-images.mjs`: reproducible WebP derivatives, preserving originals.
 
-The seven component references and pin assignments were checked against Skills
-Bricks on 15 October 2026. The catalogue is a curated snapshot, not a live sync.
+The 21 Pico and two Pi-only component references were checked against Skills
+Bricks on 16 October 2026. The catalogue is a maintained snapshot, not a live sync.
 Source cards are linked from the application. Library references:
 [picozero API](https://picozero.readthedocs.io/en/latest/api.html) and
 [setup guide](https://picozero.readthedocs.io/en/latest/gettingstarted.html).
@@ -133,12 +173,15 @@ not grant a new licence over those assets.
 
 ## Prototype boundaries
 
-- Four Detect and three Do component types; one instance of each.
+- Twelve Detect and nine Do component types; one instance of each, respecting
+  the three pin-sharing groups.
 - One controlling rule per output, with multiple independent interactions.
 - Browser previews illustrate the chosen rules, not handwritten code edits.
 - Suggestions use simple local keyword matching, not AI interpretation.
 - No hardware connection, Python execution or automatic wiring validation.
 - Physical Pico, circuit and mechanical testing remains outstanding.
+- Automated tests parse 237 Python programs and execute all 216 single-rule
+  input/output/mode combinations with mocks; they are not hardware validation.
 - No accounts, uploads, analytics or cloud project storage. Work is saved in
   browser local storage; use project export/import to move it between computers
   or between the local and hosted URLs.

@@ -1,4 +1,6 @@
-// Curated Pico slice of Skills Bricks, checked 15 October 2026.
+import {extraBricks} from './extra-bricks.js';
+export {otherPlatformBricks} from './extra-bricks.js';
+// Full Pico catalogue of Skills Bricks, checked 16 October 2026.
 // Pin assignments and diagrams are retained from the authoritative source bundle.
 export const SOURCE = 'https://raspberrypifoundation.github.io/skills-bricks';
 export const SETUP = 'https://picozero.readthedocs.io/en/latest/gettingstarted.html';
@@ -23,11 +25,21 @@ export const catalogue = [
   { id:'passive-buzzer', kind:'do', action:'Make a sound', name:'Passive buzzer', short:'Sound', desc:'A chirp, a squeak or a sound that changes as you play.', pin:9, physical:12, cls:'PWMBuzzer', variable:'buzzer', init:'PWMBuzzer(9, 2000, 32768)', materials:['Passive piezo buzzer'], wiring:'GP9 (pin 12) → buzzer +; buzzer − → GND (pin 13). Use the small passive piezo type in the brick, not an active buzzer or a loudspeaker.', test:'Run the test. You should hear a short tone, then silence.', fabrication:'Leave a sound opening. Keep the buzzer away from ears and stop if the sound is uncomfortable.', safety:'Use a small passive piezo buzzer. A loudspeaker needs a different circuit.' },
   { id:'servo', kind:'do', action:'Move something', name:'Servo motor', short:'Move', desc:'A waving arm, a wiggling tail or a mouth that opens.', pin:7, physical:10, cls:'Servo', variable:'servo', init:'Servo(7)', materials:['Positional microservo','4 × AA NiMH cells + holder'], wiring:'GP7 (pin 10) → signal; GND (pin 13) → shared ground rail → servo ground and pack −. The 4 × AA NiMH (4.8 V) pack + powers only the servo. USB powers the Pico.', test:'Test without a load. The horn should centre, pause and then stop receiving a signal. Stop if it binds or buzzes.', fabrication:'Attach only a light moving part. Leave clearance for the arm and access to the power switch.', safety:'Use a separate suitable servo supply and join the grounds. Keep battery + off Pico power pins. Do not power the servo from 3V3. Ask an adult to check this circuit.' }
 ];
+catalogue.push(...extraBricks);
+for(const c of catalogue){c.pins??=[c.pin];c.analogue??=false;}
 export const byId = Object.fromEntries(catalogue.map(c => [c.id,c]));
+export const rangeFor = id => byId[id]?.range || {min:0,max:1,step:.05,threshold:.5,unit:''};
+export function componentImports(parts){
+  const classes=[...new Set(parts.map(c=>c.cls).filter(Boolean))];
+  return [...(classes.length?[`from picozero import ${classes.join(', ')}`]:[]),'from time import sleep',...new Set(parts.flatMap(c=>c.imports||[]))];
+}
+export const componentSetup = c => c.setup || [`${c.variable} = ${c.init}  # GP${c.pin}, physical pin ${c.physical}`];
+export const componentStop = c => c.stop || [`${c.variable}.off()`];
 export function brickUrl(id) { return `${SOURCE}/${id}/${id}-pico.html`; }
 export function testCode(id) {
   const c = byId[id];
-  const head = `from picozero import ${c.cls}\nfrom time import sleep\n\n${c.variable} = ${c.init}\n\n`;
+  const head = componentImports([c]).join('\n')+'\n\n'+componentSetup(c).join('\n')+'\n\n';
+  if(c.testLines)return head+c.testLines.join('\n')+'\n';
   if (c.kind === 'detect') return head + `while True:\n    print(${c.read})\n    sleep(0.1)\n`;
   if (id === 'servo') return head + 'servo.mid()\nsleep(2)\nservo.off()\n';
   return head + `${c.variable}.on()\nsleep(${id === 'led' ? '1' : '0.3'})\n${c.variable}.off()\n`;

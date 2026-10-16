@@ -2,6 +2,7 @@ const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 import assert from 'node:assert/strict';
 import {readFile,mkdir} from 'node:fs/promises';
 import {checkTextContrast,checkBrandPalette} from './colour-contrast.mjs';
+import {byId} from '../catalogue.js';
 await mkdir('outputs',{recursive:true});
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true});
@@ -9,6 +10,7 @@ const page=await context.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 const click=action=>page.locator(`[data-action="${action}"]`).first().click();
 const nav=id=>page.locator(`.navlist [data-action="nav-${id}"]`).click();
+const pick=async id=>{const part=page.locator(`[data-pick="${id}"]`);if(!await part.isVisible())await page.locator(`[data-more="${byId[id].kind}"] > summary`).click();await part.click();};
 let contrastChecks=0;
 try{
  await page.goto(process.env.TEST_URL||'http://127.0.0.1:4173');
@@ -37,7 +39,7 @@ try{
  await nav('idea');await click('example');await page.getByRole('button',{name:'Review my idea'}).click();await page.locator('#confirm-dialog').waitFor({state:'visible'});
  assert.match(await page.locator('[data-action="review-next"]').textContent(),/Choose what it detects & does/);
  await click('review-next');
- for(const id of ['button','potentiometer','led','passive-buzzer','servo'])await page.locator(`[data-pick="${id}"]`).click();
+ for(const id of ['button','potentiometer','led','passive-buzzer','servo'])await pick(id);
  await page.screenshot({path:'outputs/prototype-parts.png',fullPage:true});
  await page.locator('[data-view="component"]').click();assert.equal(await page.locator('[data-pick="potentiometer"] h3').textContent(),'Potentiometer');
  await click('parts-next');assert.equal(await page.locator('[data-have="USB data cable"]').count(),1);assert.equal(await page.locator('[data-have="4 × AA NiMH cells + holder"]').count(),1);

@@ -98,3 +98,18 @@ select:focus-visible, summary:focus-visible { outline-color: var(--cc-blue); }
 .buzzer-symbol { color: var(--cc-burgundy); }
 dialog { border-color: var(--line); }
 #notice { background: var(--cc-blue); color: var(--white); }
+
+/* Recommended and selected parts stay in view; the full collection stays reachable. */
+.choice-section { margin-bottom: 30px; }
+.choice-section > .cards { margin-bottom: 14px; }
+.more-parts { background: var(--white); padding: 16px; border: 1px solid var(--line); border-radius: 10px; }
+.more-parts > summary { color: var(--ink); font-size: 15px; }
+.more-parts[open] > summary { margin-bottom: 14px; }
+.more-parts .cards { margin-top: 14px; }
+.part-count { font-weight: 400; }
+.component-card .match-reason { border-left: 3px solid var(--cc-blue); padding-left: 9px; font-size: 12px; color: var(--ink); }
+.component-card .alternative-note { font-size: 12px; color: var(--ink); }
+.other-platforms { margin-top: 28px; }
+.reference-component { width: 100%; height: 130px; object-fit: contain; }
+.preview-generic { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 2px solid currentColor; border-radius: 8px; font-size: 12px; }
+.preview-generic.lit { background: var(--cc-green); color: var(--ink); }

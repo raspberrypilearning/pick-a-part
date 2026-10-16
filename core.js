@@ -1,4 +1,4 @@
-import {catalogue, byId} from './catalogue.js';
+import {catalogue, byId, rangeFor, componentImports, componentSetup, componentStop} from './catalogue.js';
 export const VERSION = 1;
 export const STORAGE_KEY = 'toy-workshop-v1';
 export function freshProject() {
@@ -10,8 +10,52 @@ export const ruleEnabled = (p,r) => p.selected.includes(r.input) && r.outputs.le
 export const activeRules = p => p.rules.filter(r => ruleEnabled(p,r));
 // Local, explainable hints, never automatic component choices.
 export function suggestedParts(p) {
-  const patterns=[['button','when',/\b(button|press|push|squeeze)\b/i],['potentiometer','when',/\b(knob|dial|turn|twist|spin|spins)\b/i],['capacitive-touch','when',/\b(touch|stroke|tap)\b/i],['ldr','when',/\b(light|shadow|dark|cover)\b/i],['led','will',/\b(light|lights|glow|flash|bright|eyes)\b/i],['passive-buzzer','will',/\b(sound|noise|beep|scream|chirp|pitch|tone|squeak)\b/i],['servo','will',/\b(move|wave|wiggle|rotate|flap|spin)\b/i]];
-  return patterns.flatMap(([id,field,pattern])=>{const match=p.idea[field].match(pattern);return match?[{id,word:match[0]}]:[];});
+  const patterns=[
+    ['button',/\b(button|press(?:es|ing)?|push(?:es)?|squeez(?:e|es|ing))\b/i],
+    ['potentiometer',/\b(potentiometer|trimpot|knob|dial|turn(?:s|ing)?|twist|spin|spins)\b/i],
+    ['capacitive-touch',/\b(ttp223|touch(?:es|ing)?|stroke|tap)\b/i],
+    ['ldr',/\b(ldr|light|shadow|dark|cover)\b/i],
+    ['distance',/\b(hc-sr04p|distance|closer|nearer|near|farther|further|proximity|approach(?:es)?)\b/i],
+    ['pir',/\b(hc-sr501|adjustable motion)\b/i],
+    ['am312-pir',/\b(am312|pir|motion|movement|walk(?:s|ing)?|pass(?:es|ing)? by)\b/i],
+    ['line-sensor',/\b(ky-033|line sensor|line|track|surface)\b/i],
+    ['temperature-probe',/\b(ds18b20|probe|water temperature)\b/i],
+    ['temperature-sensor',/\b(tmp36|temperature|warm(?:er)?|cool(?:er)?|heat)\b/i],
+    ['tilt-switch',/\b(tilt(?:s|ed|ing)?|tip(?:s|ped)?|shake|shakes|roll(?:s)?|pick(?:s)? up)\b/i],
+    ['toggle-switch',/\b(toggle|lever|on\/off|on or off|switch position)\b/i],
+    ['led',/\b(led|light|lights|glow|flash|bright|eyes)\b/i],
+    ['rgb-led',/\b(rgb|colou?rs?|rainbow|mood light)\b/i],
+    ['neopixels',/\b(neopixels?|pixels?|light strip|chasing lights)\b/i],
+    ['buzzer',/\b(active buzzer|fixed beep|fixed tone)\b/i],
+    ['speaker',/\b(speaker|notes?|melody|tune|music)\b/i],
+    ['passive-buzzer',/\b(passive buzzer|sound|noise|beep|scream|chirp|pitch|tone|squeak)\b/i],
+    ['motor-driver',/\b(motor driver|dc motor|spin(?:s|ning)?|wheels?|fan|drive|rover)\b/i],
+    ['stepper',/\b(stepper|steps|precise|precision)\b/i],
+    ['servo',/\b(servo|move|wave|wiggle|flap|tail|arm|mouth)\b/i]
+  ];
+  const hints=patterns.flatMap(([id,pattern])=>{
+    const primary=byId[id].kind==='detect'?'when':'will';
+    for(const field of [primary,'play','looks']){
+      const match=p.idea[field].match(pattern);
+      if(match)return [{id,word:match[0],field}];
+    }
+    return [];
+  });
+  // Prefer specific choices to generic alternatives; never offer two parts on one pin.
+  const ids=new Set(hints.map(h=>h.id));
+  const filtered=hints.filter(h=>!(h.id==='led'&&(ids.has('rgb-led')||ids.has('neopixels'))) && !(h.id==='rgb-led'&&ids.has('neopixels')) && !(h.id==='temperature-sensor'&&ids.has('temperature-probe')) && !(h.id==='motor-driver'&&ids.has('stepper')));
+  const chosen=[];
+  for(const h of filtered)if(!chosen.some(x=>partsSharePins(x.id,h.id)))chosen.push(h);
+  return chosen;
+}
+export const partsSharePins = (a,b) => a!==b && byId[a].pins.some(pin=>byId[b].pins.includes(pin));
+export const conflictsFor = (p,id) => p.selected.filter(other=>partsSharePins(other,id));
+export const selectionConflicts = p => p.selected.flatMap((id,i)=>p.selected.slice(i+1).filter(other=>partsSharePins(id,other)).map(other=>[id,other]));
+export function partChoices(p,kind){
+  const hints=suggestedParts(p),ids=new Set([...p.selected,...hints.map(h=>h.id)]);
+  const parts=catalogue.filter(c=>c.kind===kind);
+  if(!parts.some(c=>ids.has(c.id)))ids.add(kind==='detect'?'button':'led');
+  return {featured:parts.filter(c=>ids.has(c.id)),more:parts.filter(c=>!ids.has(c.id)),hints};
 }
 export function suggestedDraft(p) {
   const inputs=selectedParts(p).filter(c=>c.kind==='detect');
@@ -19,35 +63,35 @@ export function suggestedDraft(p) {
   const hints=suggestedParts(p).map(h=>h.id);
   const input=inputs.find(c=>hints.includes(c.id))||inputs[0];
   const follows=/\b(higher|lower|pitch|brighter|dimmer|changes?|changing|gets|follows?)\b/i.test(p.idea.will);
-  return {input:input?.id||'',outputs:available.length===1?[available[0].id]:available.filter(c=>hints.includes(c.id)).map(c=>c.id),mode:input?.analogue?(follows?'follow':'threshold'):'hold',threshold:.5,direction:'above'};
+  return {input:input?.id||'',outputs:available.length===1?[available[0].id]:available.filter(c=>hints.includes(c.id)).map(c=>c.id),mode:input?.analogue?(follows?'follow':'threshold'):'hold',threshold:rangeFor(input?.id).threshold,direction:input?.id==='distance'?'below':'above'};
 }
 export function previewResponse(r,value,toggled=false) {
   const active=r.mode==='toggle'?Boolean(toggled):r.mode==='threshold'?(r.direction==='below'?value<r.threshold:value>r.threshold):Boolean(value);
-  const level=r.mode==='follow'?value:Number(active);
-  return {active,level,frequency:r.outputs.includes('passive-buzzer')&&level>.02?(r.mode==='follow'?Math.trunc(220+880*value):2000):0};
+  const range=rangeFor(r.input),normalised=Math.max(0,Math.min(1,(value-range.min)/(range.max-range.min)));
+  const level=r.mode==='follow'?normalised:Number(active);
+  return {active,level,frequency:r.outputs.some(id=>['passive-buzzer','speaker'].includes(id))&&level>.02?(r.mode==='follow'?Math.trunc(220+880*level):2000):0};
 }
 export function canTestInteraction(p) {
   const rules=activeRules(p), used=new Set(rules.flatMap(r=>[r.input,...r.outputs]));
-  return Boolean(rules.length && [...used].every(id=>p.tested[id]) && p.code.trim() && p.generated===generateCode(p));
+  return Boolean(!selectionConflicts(p).length && rules.length && [...used].every(id=>p.tested[id]) && p.code.trim() && p.generated===generateCode(p));
 }
 export const breadboardReady = p => canTestInteraction(p) && p.breadboard?.happy===true;
 export function readyToFinish(p) {
   return Boolean(ideaReady(p) && breadboardReady(p) && p.build.access && p.build.secure && p.build.retest && p.play.worked && p.play.observed.trim() && p.play.next.trim());
 }
 export function materials(p) { return [...new Set(['Raspberry Pi Pico with headers','USB data cable','Breadboard','Jumper wires',...selectedParts(p).flatMap(c=>c.materials),'Cardboard / recycled packaging','Tape / reusable fixings'])]; }
-export function modeOptions(input) { return byId[input]?.analogue ? [['threshold','React at a chosen point'],['follow','Follow the changing value']] : [['hold','Respond while held'],['toggle','Switch on / off each time']]; }
+export function modeOptions(input) { return byId[input]?.analogue ? [['threshold','React at a chosen point'],['follow','Follow the changing value']] : [['hold','Respond while the input is active'],['toggle','Switch on / off each time']]; }
 export function ruleSummary(r) {
   const c = byId[r.input];
-  const trigger = r.mode==='threshold' ? `${c.name} ${r.direction==='below'?'below':'above'} ${r.threshold}` : r.mode==='follow' ? `Follow ${c.name.toLowerCase()}` : r.mode==='toggle' ? `${c.name}: switch each time` : `While ${c.name.toLowerCase()} is held`;
+  const trigger = r.mode==='threshold' ? `${c.name} ${r.direction==='below'?'below':'above'} ${r.threshold}${rangeFor(c.id).unit}` : r.mode==='follow' ? `Follow ${c.name.toLowerCase()}` : r.mode==='toggle' ? `${c.name}: switch each time` : `While ${c.name.toLowerCase()} is active`;
   return `${trigger} → ${r.outputs.map(id=>byId[id].short.toLowerCase()).join(' + ')}`;
 }
 export function generateCode(p) {
   const rules = activeRules(p);
-  if (!rules.length) return '';
+  if (!rules.length || selectionConflicts(p).length) return '';
   const ids = new Set(rules.flatMap(r=>[r.input,...r.outputs]));
   const parts = catalogue.filter(c=>ids.has(c.id));
-  const imports = [...new Set(parts.map(c=>c.cls))].join(', ');
-  const lines = ['# Toy workshop — MicroPython + picozero', '# Generated from your interaction choices. Read, change and test it.', '# Follow the matching Pico Skills Bricks wiring; unplug before rewiring.', `from picozero import ${imports}`, 'from time import sleep', '', '# Set up only the components used by your active interactions.', ...parts.map(c=>`${c.variable} = ${c.init}  # GP${c.pin}, physical pin ${c.physical}`), ''];
+  const lines = ['# Toy workshop — MicroPython + picozero', '# Generated from your interaction choices. Read, change and test it.', '# Follow the matching Pico Skills Bricks wiring; unplug before rewiring.', ...componentImports(parts), '', '# Set up only the components used by your active interactions.', ...parts.flatMap(componentSetup), ''];
   for (const r of rules) if (r.mode==='toggle') lines.push(`state_${r.id} = False`, `previous_${r.id} = False`);
   lines.push('', 'try:', '    while True:');
   for (const r of rules) {
@@ -55,21 +99,36 @@ export function generateCode(p) {
     const v = `value_${r.id}`;
     const a = `active_${r.id}`;
     lines.push(`        # ${ruleSummary(r)}`, `        ${v} = ${c.read}`);
+    const nullable=c.id==='distance'||c.id.startsWith('temperature-');
+    if(nullable)lines.push(`        valid_${r.id} = ${v} is not None`,`        ${v} = ${v} if valid_${r.id} else 0`);
     if (r.mode==='toggle') lines.push(`        if ${v} and not previous_${r.id}:`, `            state_${r.id} = not state_${r.id}`, `        previous_${r.id} = ${v}`, `        ${a} = state_${r.id}`);
     else if (r.mode==='threshold') lines.push(`        ${a} = ${v} ${r.direction==='below'?'<':'>'} ${Number(r.threshold)}`);
     else if (r.mode!=='follow') lines.push(`        ${a} = ${v}`);
+    if(nullable&&r.mode!=='follow')lines.push(`        ${a} = valid_${r.id} and ${a}`);
+    let level=v;
+    if(r.mode==='follow'&&(c.range||nullable)){
+      const range=rangeFor(c.id);level=`level_${r.id}`;
+      lines.push(`        ${level} = ${nullable?`0 if not valid_${r.id} else `:''}max(0, min(1, (${v} - (${range.min})) / ${range.max-range.min}))`);
+    }
     for (const id of r.outputs) {
-      if (id==='led') lines.push(`        led.value = ${r.mode==='follow' ? v : `1 if ${a} else 0`}`);
+      if (id==='led') lines.push(`        led.value = ${r.mode==='follow' ? level : `1 if ${a} else 0`}`);
       if (id==='passive-buzzer') {
-        if (r.mode==='follow') lines.push(`        buzzer.freq = int(220 + 880 * ${v})`, `        buzzer.value = 0.2 if ${v} > 0.02 else 0`);
+        if (r.mode==='follow') lines.push(`        buzzer.freq = int(220 + 880 * ${level})`, `        buzzer.value = 0.2 if ${level} > 0.02 else 0`);
         else lines.push(`        buzzer.value = 0.2 if ${a} else 0`);
       }
-      if (id==='servo') lines.push('        # Start with a small travel range; test the linkage unloaded.', `        servo.value = ${r.mode==='follow' ? `0.35 + 0.30 * ${v}` : `0.65 if ${a} else 0.35`}`);
+      if (id==='servo') lines.push('        # Start with a small travel range; test the linkage unloaded.', `        servo.value = ${nullable?`None if not valid_${r.id} else `:''}${r.mode==='follow' ? `0.35 + 0.30 * ${level}` : `0.65 if ${a} else 0.35`}`);
+      const out=byId[id],amount=r.mode==='follow'?level:`(1 if ${a} else 0)`,on=r.mode==='follow'?`${level} > 0.02`:a;
+      if(out.effect==='rgb')lines.push(`        rgb.color = (int(80 * ${amount}), 0, int(80 * ${amount}))`);
+      if(out.effect==='pixel')lines.push(`        pixels[0] = (int(40 * ${amount}), 0, int(15 * ${amount}))`,'        pixels.write()');
+      if(out.effect==='digital')lines.push(`        active_buzzer.value = 1 if ${on} else 0`);
+      if(out.effect==='speaker')lines.push(`        speaker.freq = ${r.mode==='follow'?`int(220 + 880 * ${level})`:'2000'}`,`        speaker.volume = 0.1 if ${on} else 0`);
+      if(out.effect==='motor')lines.push(`        motor.value = 0.3 * ${amount}`);
+      if(out.effect==='stepper')lines.push(`        if ${on}:`,`            stepper.step(max(1, int(4 * ${amount})))`,'        else:','            stepper.off()');
     }
     lines.push('');
   }
   lines.push('        sleep(0.02)', 'finally:', '    # Stop the outputs when you stop the program.');
-  for (const c of parts.filter(c=>c.kind==='do')) lines.push(`    ${c.variable}.off()`);
+  for (const c of parts.filter(c=>c.kind==='do')) lines.push(...componentStop(c).map(line=>'    '+line));
   return lines.join('\n')+'\n';
 }
 // Accept only our bounded data schema, never imported HTML or executable code.
@@ -79,6 +138,7 @@ export function validateProject(raw) {
   const str = (v,max=6000) => typeof v==='string' ? v.slice(0,max) : '';
   for (const k of Object.keys(p.idea)) p.idea[k] = str(raw.idea[k]);
   p.selected = [...new Set(raw.selected.filter(id=>byId[id]))];
+  if(selectionConflicts(p).length)throw new Error('This project selects alternative parts on the same Pico pins. Keep one sounder, one PIR and one motor-drive option.');
   p.have = Array.isArray(raw.have) ? raw.have.filter(x=>typeof x==='string').slice(0,60) : [];
   for (const k of Object.keys(p.setup)) p.setup[k]=raw.setup?.[k]===true;
   p.tested = Object.fromEntries(catalogue.map(c=>[c.id,raw.tested?.[c.id]===true]));
@@ -87,7 +147,8 @@ export function validateProject(raw) {
     if (!r || !Number.isInteger(r.id) || r.id<1 || r.id>10000 || ruleIds.has(r.id) || byId[r.input]?.kind!=='detect' || !Array.isArray(r.outputs)) throw new Error('The project contains an invalid interaction.');
     const outputs = [...new Set(r.outputs)];
     if (!outputs.length || outputs.some(id=>byId[id]?.kind!=='do'||outputIds.has(id)) || !modeOptions(r.input).some(([m])=>m===r.mode)) throw new Error('The project has conflicting or invalid interactions.');
-    if (!Number.isFinite(Number(r.threshold)) || Number(r.threshold)<0 || Number(r.threshold)>1) throw new Error('Invalid threshold.');
+    const range=rangeFor(r.input);
+    if (!Number.isFinite(Number(r.threshold)) || Number(r.threshold)<range.min || Number(r.threshold)>range.max) throw new Error('Invalid threshold.');
     outputs.forEach(id=>outputIds.add(id)); ruleIds.add(r.id);
     p.rules.push({id:r.id,input:r.input,outputs,mode:r.mode,threshold:Number(r.threshold),direction:r.direction==='below'?'below':'above'});
   }

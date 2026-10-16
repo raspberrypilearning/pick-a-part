@@ -2,9 +2,9 @@
 const {default:sharp}=await import(process.env.SHARP_MODULE||'sharp');
 import {stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
-import {catalogue} from '../catalogue.js';
+import {catalogue,otherPlatformBricks} from '../catalogue.js';
 let before=0,after=0;
-for(const c of catalogue)for(const kind of ['components','wiring']){
+for(const c of [...catalogue,...otherPlatformBricks])for(const kind of catalogue.includes(c)?['components','wiring']:['components']){
  const source=new URL(`../assets/${kind}/${c.id}.png`,import.meta.url);
  const output=new URL(`../assets/${kind}/${c.id}.webp`,import.meta.url);
  const image=sharp(fileURLToPath(source));
