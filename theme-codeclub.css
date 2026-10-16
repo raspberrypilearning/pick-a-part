@@ -113,3 +113,6 @@ dialog { border-color: var(--line); }
 .reference-component { width: 100%; height: 130px; object-fit: contain; }
 .preview-generic { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 2px solid currentColor; border-radius: 8px; font-size: 12px; }
 .preview-generic.lit { background: var(--cc-green); color: var(--ink); }
+.board-choice{display:flex;align-items:center;gap:24px;padding:18px 22px;margin:0 0 26px;background:#f8f294;border:1px solid #d8d069;border-radius:16px}
+.board-choice>div{flex-shrink:0}.board-choice .segmented{margin:8px 0 0}.board-choice p{margin:0;font-size:13px;line-height:1.6;color:#232332}
+@media(max-width:600px){.board-choice{align-items:flex-start;flex-direction:column;gap:10px;padding:16px}.board-choice .segmented button{min-width:82px}}

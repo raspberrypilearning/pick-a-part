@@ -1,7 +1,7 @@
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
-import {catalogue,byId,otherPlatformBricks,rangeFor} from '../catalogue.js';
+import {catalogue,byId,rangeFor} from '../catalogue.js';
 import {freshProject,generateCode} from '../core.js';
 import {checkTextContrast} from './colour-contrast.mjs';
 await mkdir('outputs',{recursive:true});
@@ -44,9 +44,8 @@ try{
   assert.match(await page.locator('#brick-dialog a').filter({hasText:'original Pico'}).getAttribute('href'),new RegExp(`${c.id}-pico.html$`));
   await click('close-brick');
  }
- await page.locator('[data-more="other"] > summary').click();assert.equal(await page.locator('.other-platforms [data-pick]').count(),0);
- assert.equal(await page.locator('.other-platforms a').count(),2);
- for(const c of otherPlatformBricks)assert.equal(await page.locator(`.other-platforms a[href$="/${c.id}-pi.html"]`).count(),1);
+ assert.equal(await page.locator('.other-platforms').count(),0);
+ assert.equal(await page.locator('[data-platform="pi"]').count(),1,'Pi bricks now have their own board choice');
  // Adding another sounder asks; cancelling preserves the project, swapping pauses old rules.
  const p=freshProject();p.selected=['button','passive-buzzer'];p.page='parts';p.rules=[{id:1,input:'button',outputs:['passive-buzzer'],mode:'hold',threshold:.5,direction:'above'}];p.generated=generateCode(p);p.code=p.generated+'\n# Keep my edits\n';p.tested['passive-buzzer']=true;
  await load(p);await pick('speaker');assert.match(await page.locator('#confirm-dialog').textContent(),/shares Pico pins/);
@@ -78,5 +77,5 @@ try{
   if(width===390){await page.locator('[data-strand="do"]').scrollIntoViewIfNeeded();await page.screenshot({path:'outputs/catalogue-mobile.png'});}
  }
  assert.deepEqual(errors,[]);assert.deepEqual(badImages,[]);
- console.log('PASS: 21 selectable Pico bricks; 2 labelled Pi-only references; matching and collapsed extras; keyboard and focus; all wiring/help; explicit pin swaps; new-part code/preview/build; save/import; mobile and contrast.');
+ console.log('PASS: 21 selectable Pico bricks; Pi selector; matching and collapsed extras; keyboard and focus; all wiring/help; explicit pin swaps; new-part code/preview/build; save/import; mobile and contrast.');
 }finally{await browser.close();}

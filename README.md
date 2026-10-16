@@ -1,7 +1,7 @@
 # Pick a part
 
-A browser prototype for a learner-led toy-making project with Raspberry Pi Pico,
-MicroPython and picozero, supported by [Skills Bricks](https://raspberrypifoundation.github.io/skills-bricks/).
+A browser prototype for a learner-led toy-making project with Raspberry Pi Pico
+(MicroPython + picozero) or Raspberry Pi (Python + gpiozero), supported by [Skills Bricks](https://raspberrypifoundation.github.io/skills-bricks/).
 
 **[Open the prototype](https://raspberrypilearning.github.io/pick-a-part/)**
 
@@ -16,7 +16,7 @@ always returns to the overview.
    uses it, in the learner's own words.
 2. **Choose parts:** pick Detect and Do components. Optional, local word-based
    suggestions explain why a part might fit; nothing is silently selected.
-3. **Get ready:** gather the kit, check Thonny and MicroPython, and try picozero.
+3. **Get ready:** gather the kit and check the editor, Python and libraries for the chosen board.
 4. **Make & code:** test parts on a breadboard, choose a rule, edit the starter and
    try the complete interaction. A dedicated troubleshooting view helps isolate faults.
 5. **Build & play:** fit the circuit, controls and wires into a body, re-test it,
@@ -29,7 +29,7 @@ names without competing step numbers; Your journey remains the first overview.
 The button help explains the contact-switch principle: two conductive contacts
 closing can provide the same input as a push button. Foil flaps, squeeze pads and
 lid contacts illustrate how the physical control can suit the toy. The guidance
-retains the existing GP10-to-GND input and distinguishes it from capacitive touch.
+uses GP10-to-GND on Pico or GPIO24-to-GND on Pi and distinguishes it from capacitive touch.
 
 A separate, self-reported breadboard checkpoint marks readiness for physical
 making. Changing code, rules or component choices resets it and the later
@@ -43,9 +43,25 @@ Choices remain editable. Parts chosen for later are kept separate from component
 used in active interactions. Removing a selected part pauses its interaction;
 rebuilding code keeps the previous draft.
 
+## Pi / Pico choice
+
+A keyboard-accessible Pi/Pico selector appears on every page. Pico remains the
+default for new and legacy projects. The idea and navigation are shared; each
+board keeps separate parts, kit ticks, setup, code, previous drafts, tests and
+build/play notes. Switching is not an automatic hardware conversion. A first
+switch starts an empty build on the other board; switching back restores it.
+Exports include both builds. Version 1 files migrate to version 2 without
+losing valid Pico test observations; the storage key is retained for continuity.
+
+The board selection changes the catalogue, material list, wiring images, pin
+reference, setup help, source-card links, code and learner-facing board labels.
+Pi wiring uses BCM GPIO numbers and separate 40-pin header diagrams; shut down
+and disconnect all power before changing connections.
+
 ## Full Skills Bricks catalogue
 
-All 21 maintained Pico bricks are available: 12 Detect and 9 Do. Likely matches
+All 21 maintained Pico bricks (12 Detect / 9 Do) and all 23 Pi bricks
+(13 Detect / 10 Do) are available. Likely matches
 from the learner's interaction and response text appear first, with a short
 explanation quoting the matching word. Play instructions and appearance notes
 also supply hints. Nothing is selected until the learner chooses it.
@@ -54,12 +70,14 @@ Unmatched options sit inside **More Detect parts** and **More Do parts**.
 Selecting an extra moves it into the visible collection; changing the idea never
 hides or removes chosen parts. With no match, Button and LED are labelled as
 simple starting points. Expanded sections stay open while changing choices.
-The two Raspberry Pi-only bricks (Pi Camera and Robot / rover) have a separate
-reference section and cannot be mistaken for Pico-compatible components.
+Pi Camera and Robot / rover are selectable only on the Pi side. The camera is
+clearly labelled a code-your-own extension: its photo/video examples do not
+pretend an image is a digital input. It stays in the kit and individual tests,
+but image interpretation is outside the rule composer.
 
 The source's pin-sharing groups are enforced: one sounder (active buzzer,
 passive buzzer or speaker), one PIR type (AM312 or HC-SR501), and one motor-drive
-option (motor driver or stepper). Choosing an alternative asks before replacing
+option (motor driver, stepper or Pi rover). Choosing an alternative asks before replacing
 the selected part, pauses its old interactions, clears its test and preserves
 edited code. Bulk suggestions never silently replace a conflicting choice.
 
@@ -69,6 +87,15 @@ degrees Celsius; Follow maps −10–50 °C to 0–1. Distance uses 0–1 metre 
 echoes rest the outputs. The DS18B20 helper refreshes cached readings without
 blocking each interaction loop. NeoPixel and DS18B20 use built-in MicroPython
 modules; other parts use picozero. Stepper requires a recent picozero version.
+
+Pi starters use gpiozero APIs and ranges, including PWMLED, TonalBuzzer,
+RGB values 0–1 and Servo values −0.3–0.3 for small unloaded test movements.
+The Pi potentiometer and TMP36 share one MCP3008 on channels 0/1; software SPI
+avoids the hardware SPI interface. Setup flags explain serial/I²C pin use,
+1-Wire and the additional camera/NeoPixel libraries. The Pi 5 NeoPixel helper
+uses PIO; Pi 4 uses the standard Adafruit driver. Model-specific setup needs a
+club leader. DS18B20 readings are sampled in a background thread so slow
+conversions do not block the main interaction loop.
 
 New images are copied from the maintained source's rendered `dist/` assets:
 
@@ -94,11 +121,11 @@ Pins follow the owner-approved `breadboard/PIN-MAP.md` in the source bundle.
 - Code help explains only the active interactions, including the buzzer's pitch
   formula and how to change its upper pitch.
 - Wiring help explains GPIO names versus physical pins and includes a labelled
-  Pico reference. Pin assignments and original diagrams are unchanged.
+  Pico or Pi reference. Pin assignments and original diagrams are unchanged.
 - A prominent save-copy reminder explains shared-computer storage. Setup checks
   migrate into older saves as unchecked; existing work is retained.
-- Runtime WebP images total about 2.33 MB, including all 23 component thumbnails,
-  versus 39.7 MB for the originals. The original PNG diagrams remain
+- Runtime WebP images total about 5.63 MB across both platforms, including all
+  23 shared component thumbnails, versus 49.0 MB for the originals. The original PNG diagrams remain
   linked at full size. Regenerate derivatives with `npm run optimise:images`.
 
 ## Run locally
@@ -131,11 +158,16 @@ npm start
 npm run test:browser
 npm run test:feedback
 npm run test:catalogue
+npm run test:platform
 ```
 
 Set `TEST_URL` to test a deployed instance, or `PYTHON` to select the Python
 executable. Browser tests use an isolated browser context and keep screenshots
 and sample project saves in the ignored `outputs/` directory.
+
+An additional API-level check uses real gpiozero outputs with mock pins (no Pi
+needed). Install `gpiozero==2.0.1.post3` in an isolated Python environment and run
+`PI_TEST_PYTHON=/path/to/venv/bin/python npm run test:pi-runtime`.
 
 ## Hosting
 
@@ -154,34 +186,43 @@ The separate theme changes colour only, not layout or stored projects.
 - `catalogue.js`: curated component metadata, assigned pins and test fragments.
 - `extra-bricks.js`: the remaining Pico components and Pi-only reference entries.
 - `chooser.js`: explained matches, selected parts and expandable alternatives.
-- `core.js`: project validation, materials lists and MicroPython composition.
+- `pi-source.js`: maintained Raspberry Pi reference text, example code and image names.
+- `pi-bricks.js`: Pi metadata, source-approved pins and adapted runnable starters.
+- `pi-guidance.js`: Pi setup, header reference and code help.
+- `platform.js`: board labels and wiring asset paths.
+- `core.js`: versioned board drafts, project validation, materials and code composition.
 - `app.js`: learner screens, local state and visual previews.
 - `guidance.js`: setup, assembly, troubleshooting, pin reference and tailored help.
 - `sound.js`: short opt-in audio preview and its stop lifecycle.
 - `styles.css`: responsive layout.
 - `theme-codeclub.css`: Code Club palette and accessible colour pairings.
-- `assets/`: existing Skills Bricks component images and Pico wiring diagrams.
+- `assets/`: existing Skills Bricks component images and platform-specific wiring diagrams.
 - `scripts/optimise-images.mjs`: reproducible WebP derivatives, preserving originals.
 
-The 21 Pico and two Pi-only component references were checked against Skills
+The 21 Pico and 23 Pi component references were checked against Skills
 Bricks on 16 October 2026. The catalogue is a maintained snapshot, not a live sync.
 Source cards are linked from the application. Library references:
 [picozero API](https://picozero.readthedocs.io/en/latest/api.html) and
-[setup guide](https://picozero.readthedocs.io/en/latest/gettingstarted.html).
+[setup guide](https://picozero.readthedocs.io/en/latest/gettingstarted.html),
+[gpiozero outputs](https://gpiozero.readthedocs.io/en/stable/api_output.html),
+[gpiozero tones](https://gpiozero.readthedocs.io/en/stable/api_tones.html) and
+[Adafruit Pi 5 NeoPixel support](https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/using-neopixels-on-the-pi-5).
 Reused artwork remains subject to its source owner's rights; this repository does
 not grant a new licence over those assets.
 
 ## Prototype boundaries
 
-- Twelve Detect and nine Do component types; one instance of each, respecting
-  the three pin-sharing groups.
+- One instance of each available component per board, respecting the pin-sharing
+  groups; Pi Camera remains an explicitly manual-code extension.
 - One controlling rule per output, with multiple independent interactions.
 - Browser previews illustrate the chosen rules, not handwritten code edits.
 - Suggestions use simple local keyword matching, not AI interpretation.
 - No hardware connection, Python execution or automatic wiring validation.
-- Physical Pico, circuit and mechanical testing remains outstanding.
-- Automated tests parse 237 Python programs and execute all 216 single-rule
-  input/output/mode combinations with mocks; they are not hardware validation.
+- Physical Pi/Pico, circuit, camera and mechanical testing remains outstanding.
+- Automated tests parse 500 Python programs (237 Pico / 263 Pi), execute 216 Pico
+  combinations with mocks and 36 Pi combinations with real gpiozero/mock pins.
+  Four browser suites cover both catalogues, persistence and responsive layouts.
+  These checks are not hardware validation.
 - No accounts, uploads, analytics or cloud project storage. Work is saved in
   browser local storage; use project export/import to move it between computers
   or between the local and hosted URLs.

@@ -1,3 +1,5 @@
+import {makePiCatalogue} from './pi-bricks.js';
+import {platformInfo} from './platform.js';
 import {extraBricks} from './extra-bricks.js';
 export {otherPlatformBricks} from './extra-bricks.js';
 // Full Pico catalogue of Skills Bricks, checked 16 October 2026.
@@ -27,17 +29,22 @@ export const catalogue = [
 ];
 catalogue.push(...extraBricks);
 for(const c of catalogue){c.pins??=[c.pin];c.analogue??=false;}
+export const piCatalogue = makePiCatalogue(catalogue);
+export const catalogueFor = platform => platform==='pi'?piCatalogue:catalogue;
+export const byIdFor = platform => platform==='pi'?piById:byId;
+const piById = Object.fromEntries(piCatalogue.map(c=>[c.id,c]));
 export const byId = Object.fromEntries(catalogue.map(c => [c.id,c]));
-export const rangeFor = id => byId[id]?.range || {min:0,max:1,step:.05,threshold:.5,unit:''};
+export const rangeFor = (id,platform='pico') => byIdFor(platform)[id]?.range || {min:0,max:1,step:.05,threshold:.5,unit:''};
 export function componentImports(parts){
-  const classes=[...new Set(parts.map(c=>c.cls).filter(Boolean))];
-  return [...(classes.length?[`from picozero import ${classes.join(', ')}`]:[]),'from time import sleep',...new Set(parts.flatMap(c=>c.imports||[]))];
+  const classes=[...new Set(parts.flatMap(c=>c.cls?c.cls.split(', '):[]))];
+  return [...(classes.length?[`from ${parts[0]?.platform==='pi'?'gpiozero':'picozero'} import ${classes.join(', ')}`]:[]),'from time import sleep',...new Set(parts.flatMap(c=>c.imports||[]))];
 }
-export const componentSetup = c => c.setup || [`${c.variable} = ${c.init}  # GP${c.pin}, physical pin ${c.physical}`];
+export const componentSetup = c => c.setup || [`${c.variable} = ${c.init}  # ${platformInfo(c).prefix}${c.pin}, physical pin ${c.physical}`];
 export const componentStop = c => c.stop || [`${c.variable}.off()`];
-export function brickUrl(id) { return `${SOURCE}/${id}/${id}-pico.html`; }
-export function testCode(id) {
-  const c = byId[id];
+export function brickUrl(id,platform='pico') { return `${SOURCE}/${id}/${id}-${platform}.html`; }
+export function testCode(id,platform='pico') {
+  const c = byIdFor(platform)[id];
+  if(c.fullTest)return c.fullTest;
   const head = componentImports([c]).join('\n')+'\n\n'+componentSetup(c).join('\n')+'\n\n';
   if(c.testLines)return head+c.testLines.join('\n')+'\n';
   if (c.kind === 'detect') return head + `while True:\n    print(${c.read})\n    sleep(0.1)\n`;
