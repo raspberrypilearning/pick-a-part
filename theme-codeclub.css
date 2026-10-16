@@ -36,7 +36,7 @@
 /* Dark text on bright surfaces; white text on blue actions. */
 a, .btn.text, .brick-link { color: var(--cc-blue); }
 .btn.danger { color: var(--danger); }
-.brand, .brand-mark { color: var(--ink); }
+.brand { color: var(--ink); }
 .save-status::before { background: var(--cc-green); }
 .sidebar { background: var(--white); }
 .navitem.active { background: var(--cc-green); color: var(--ink); font-weight: 700; }

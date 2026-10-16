@@ -216,6 +216,12 @@ values; only supporting colours use the permitted 20% and 60% tints. Dark text i
 used on bright green, cyan, pink and yellow; blue buttons use white text.
 The separate theme changes colour only, not layout or stored projects.
 
+The header uses the official green stacked Code Club logo, sourced unchanged
+from the [Code Club website](https://codeclub.org/assets/code-club-logo-stacked-898406398f93d66cfd99679bf1ba4bcec9ac84148a4c3874036e353b3b34e278.svg).
+It is displayed at 36px high with at least 18px clear space, following the
+brand guide's minimum size and spacing rules. The logo remains the property
+of the Raspberry Pi Foundation.
+
 - `catalogue.js`: curated component metadata, assigned pins and test fragments.
 - `pico-setup.js`: optional detailed Pico setup guides and troubleshooting popups.
 - `coding.js`: explicit coding approach and board-specific component-script workspace.

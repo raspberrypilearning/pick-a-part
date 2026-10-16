@@ -16,6 +16,10 @@ try{
  await page.goto(process.env.TEST_URL||'http://127.0.0.1:4173');
  await page.locator('h1').waitFor();
  assert.equal(await page.title(),'Toy workshop · Pick a path');
+ const logo=page.getByRole('img',{name:'Code Club',exact:true});
+ await logo.evaluate(img=>img.decode());
+ assert.equal(await logo.getAttribute('src'),'assets/code-club-logo.svg');
+ assert.equal(await page.locator('.brand-mark').count(),0,'replace the placeholder arrow');
  await checkBrandPalette(page);contrastChecks+=await checkTextContrast(page);
  await page.evaluate(()=>document.fonts.ready);
  await page.screenshot({path:'outputs/prototype-journey.png',fullPage:true});
@@ -95,6 +99,14 @@ try{
  // Every screen reflows at phone and desktop widths, without page overflow.
  for(const width of [1440,768,390,320]){
   await page.setViewportSize({width,height:900});
+  const brandGeometry=await page.locator('.brand-logo').evaluate(img=>{
+   const bounds=img.getBoundingClientRect(),header=img.closest('.topbar').getBoundingClientRect();
+   return {height:bounds.height,ratio:bounds.width/bounds.height,naturalRatio:img.naturalWidth/img.naturalHeight,left:bounds.left,top:bounds.top-header.top,bottom:header.bottom-bounds.bottom,gap:parseFloat(getComputedStyle(img.parentElement).gap)};
+  });
+  assert.ok(brandGeometry.height>=35,`logo meets minimum size at ${width}px`);
+  assert.ok(Math.abs(brandGeometry.ratio-brandGeometry.naturalRatio)<.01,'logo proportions are preserved');
+  for(const side of ['left','top','bottom','gap'])assert.ok(brandGeometry[side]>=brandGeometry.height/2,`logo has clear space (${side}) at ${width}px`);
+  await page.locator('.topbar').screenshot({path:`outputs/prototype-header-${width}.png`});
   for(const id of ['journey','idea','parts','ready','make','play','finish']){
    await nav(id);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);assert.equal(overflow,false,`${id} overflows at ${width}px`);
    assert.doesNotMatch(await page.locator('body').innerText(),/\bnotic(?:e|es|ed|ing)\b/i,`${id} should use Detect terminology`);
