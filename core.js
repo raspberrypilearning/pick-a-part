@@ -4,7 +4,7 @@ import {piOutputLines} from './pi-bricks.js';
 export const VERSION = 2;
 export const STORAGE_KEY = 'toy-workshop-v1';
 export function freshProject(platform='pico') {
-  return {version:VERSION, platform, drafts:{}, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], setup:{editor:false,firmware:false,library:false}, tested:{}, rules:[], nextRule:1, code:'', generated:'', backup:'', breadboard:{happy:false}, build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'journey'};
+  return {version:VERSION, platform, drafts:{}, idea:{when:'',will:'',person:'',looks:'',play:'',name:''}, selected:[], have:[], setup:{editor:false,firmware:false,library:false}, tested:{}, rules:[], nextRule:1, codeMode:'', manual:{started:false,code:'',parts:[],external:false}, code:'', generated:'', backup:'', breadboard:{happy:false}, build:{body:'',access:false,secure:false,retest:false}, play:{observed:'',next:'',worked:false}, completed:false, page:'journey'};
 }
 export const selectedParts = p => catalogueFor(p.platform).filter(c => p.selected.includes(c.id));
 export const ideaReady = p => ['when','will','person','looks','play'].every(k => p.idea[k].trim());
@@ -81,9 +81,22 @@ export function previewResponse(r,value,toggled=false) {
   const level=r.mode==='follow'?normalised:Number(active);
   return {active,level,frequency:r.outputs.some(id=>['passive-buzzer','speaker'].includes(id))&&level>.02?(r.mode==='follow'?Math.trunc(220+880*level):2000):0};
 }
+export const codingMode=p=>p.codeMode||(p.code?.trim()||p.rules.length?'generated':'');
+export const currentCode=p=>codingMode(p)==='manual'?(p.manual?.code||''):p.code;
+export function interactionParts(p){return codingMode(p)==='manual'?(p.manual?.parts||[]):[...new Set(activeRules(p).flatMap(r=>[r.input,...r.outputs]))];}
+export function interactionReady(p){
+ const ids=interactionParts(p),byId=byIdFor(p.platform);
+ return !selectionConflicts(p).length&&ids.every(id=>p.selected.includes(id))&&ids.some(id=>byId[id]?.kind==='detect')&&ids.some(id=>byId[id]?.kind==='do');
+}
+export const codeReady=p=>codingMode(p)==='manual'?Boolean((p.manual?.code||'').trim()||p.manual?.external):Boolean(p.code.trim())&&p.generated===generateCode(p);
 export function canTestInteraction(p) {
-  const rules=activeRules(p), used=new Set(rules.flatMap(r=>[r.input,...r.outputs]));
-  return Boolean(!selectionConflicts(p).length && rules.length && [...used].every(id=>p.tested[id]) && p.code.trim() && p.generated===generateCode(p));
+ return Boolean(interactionReady(p)&&interactionParts(p).every(id=>p.tested[id])&&codeReady(p));
+}
+export function chooseCodingMode(p,mode){
+ if(!['manual','generated'].includes(mode))throw new Error('Unknown coding choice.');
+ if(codingMode(p)===mode)return p;
+ const manual=p.manual||freshProject().manual;
+ return {...p,codeMode:mode,manual:mode==='manual'&&!manual.started?{...manual,started:true,parts:[...p.selected]}:manual,breadboard:{happy:false},build:{...p.build,retest:false},play:{...p.play,worked:false},completed:false};
 }
 export const breadboardReady = p => canTestInteraction(p) && p.breadboard?.happy===true;
 export function readyToFinish(p) {
@@ -171,6 +184,12 @@ export function validateProject(raw) {
   }
   p.nextRule = Math.max(0,...ruleIds)+1;
   for (const k of ['code','generated','backup']) p[k]=str(raw[k],100000);
+  if(raw.codeMode!==undefined&&!['','manual','generated'].includes(raw.codeMode))throw new Error('Unknown coding choice in this project.');
+  p.codeMode=raw.codeMode||(p.code.trim()||p.rules.length?'generated':'');
+  p.manual.code=str(raw.manual?.code,100000);
+  p.manual.parts=Array.isArray(raw.manual?.parts)?[...new Set(raw.manual.parts.filter(id=>Object.hasOwn(byId,id)))]:[];
+  p.manual.started=raw.manual?.started===true||Boolean(p.manual.code)||p.manual.parts.length>0;
+  p.manual.external=raw.manual?.external===true;
   // Older project files keep their work, but do not imply this new test was done.
   p.breadboard.happy=raw.breadboard?.happy===true && canTestInteraction(p);
   p.build.body=str(raw.build?.body);
@@ -190,7 +209,7 @@ export function validateProject(raw) {
 }
 
 // The idea is shared; hardware, code and observations belong to one board draft.
-const buildFields=['selected','have','setup','tested','rules','nextRule','code','generated','backup','breadboard','build','play','completed'];
+const buildFields=['selected','have','setup','tested','rules','nextRule','codeMode','manual','code','generated','backup','breadboard','build','play','completed'];
 function buildSnapshot(p){return structuredClone(Object.fromEntries(buildFields.map(k=>[k,p[k]])));}
 export function switchPlatform(p,platform){
   if(!['pico','pi'].includes(platform))throw new Error('Unknown board.');

@@ -31,7 +31,7 @@ try{
   await page.locator('[data-action="close-brick"]').click();
  }
  await nav('ready');assert.match(await page.locator('main').textContent(),/Picamera2/);assert.match(await page.locator('.setup-code').textContent(),/import gpiozero/);assert.doesNotMatch(await page.locator('.setup-code').textContent(),/pico_led/);
- await nav('make');await page.locator('[data-make-tab="code"]').click();assert.equal(await page.locator('#rule-input option[value="picamera"]').count(),0);assert.match(await page.locator('main').textContent(),/code your own/);
+ await nav('make');await page.locator('[data-make-tab="code"]').click();await page.locator('[data-code-mode="generated"]').click();assert.equal(await page.locator('#rule-input option[value="picamera"]').count(),0);assert.match(await page.locator('main').textContent(),/code your own/);
  await page.getByRole('button',{name:'Add to my code',exact:true}).click();const generated=await page.locator('#code-editor').inputValue();assert.match(generated,/Button\(24\)/);assert.match(generated,/robot.forward/);
  await page.locator('#code-editor').fill(generated+'\n# Keep my Pi changes\n');
  const piDraft=await saved();await page.locator('[data-platform="pico"]').click();assert.deepEqual((await saved()).selected,['button']);assert.equal((await saved()).code,'');
@@ -40,7 +40,7 @@ try{
  await load(await saved());assert.equal((await saved()).code,piDraft.code);assert.deepEqual((await saved()).drafts.pico.selected,['button']);
  // Every composer-supported Pi brick reaches code, preview and physical-making help.
  for(const c of piCatalogue.filter(c=>!c.manualOnly)){
-  const p=freshProject('pi');p.selected=c.kind==='detect'?[c.id,'led']:['button',c.id];p.page='make';await load(p);await page.locator('[data-make-tab="code"]').click();await page.getByRole('button',{name:'Add to my code',exact:true}).click();
+  const p=freshProject('pi');p.selected=c.kind==='detect'?[c.id,'led']:['button',c.id];p.page='make';await load(p);await page.locator('[data-make-tab="code"]').click();await page.locator('[data-code-mode="generated"]').click();await page.getByRole('button',{name:'Add to my code',exact:true}).click();
   assert.ok((await page.locator('#code-editor').inputValue()).length>100);
   if(c.analogue)await page.locator('#preview-value').fill(String(c.range?.max||1));else await page.locator('#preview-press').click();
   assert.doesNotMatch(await page.locator('main').textContent(),/undefined|NaN|\$\{board/);

@@ -129,4 +129,14 @@ dialog { border-color: var(--line); }
 #setup-dialog .setup-return{border-top:1px solid var(--line);margin-top:24px;padding-top:20px}
 #setup-status:empty{display:none}
 #setup-status{padding:12px;background:var(--mint);border-radius:8px}
+.coding-options{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+.coding-option{display:flex;flex-direction:column;gap:10px;min-width:0;padding:20px;text-align:left;font:inherit;line-height:1.6;color:var(--ink);background:var(--white);border:2px solid var(--support-slate-60);border-radius:10px;cursor:pointer}
+.coding-option strong{font-size:18px}.coding-option span{font-size:13px}
+.coding-option:hover{background:var(--support-cyan-20)}
+.coding-option.chosen{background:var(--mint);border-color:var(--cc-blue);box-shadow:inset 0 0 0 1px var(--cc-blue)}
+.manual-component{padding:20px 0;border-top:1px solid var(--line)}
+.manual-component-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.manual-component-head h3{margin:0}
+.component-script pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;background:var(--cc-dark-green);color:var(--mint);border-radius:8px;font:12px/1.75 monospace}
+.manual-program{margin:28px 0}.manual-program .external-code{margin-top:18px}
+@media(max-width:700px){.coding-options{grid-template-columns:1fr}.coding-option{padding:16px}}
 @media(max-width:600px){#setup-dialog{width:calc(100% - 24px);max-height:92dvh}#setup-dialog .dialog-head,#setup-dialog .dialog-body{padding:18px}#setup-dialog .dialog-head h2{font-size:20px}.setup-help-button{white-space:normal;text-align:left}}

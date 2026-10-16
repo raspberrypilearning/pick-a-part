@@ -41,7 +41,7 @@ try{
   }
   await page.locator(`[data-tested="${id}"]`).check();await click('close-brick');
  }
- await click('code-workbench');assert.equal(await page.locator('#rule-input').inputValue(),'potentiometer');assert.equal(await page.locator('#rule-mode').inputValue(),'follow');
+ await click('code-workbench');await page.locator('[data-code-mode="generated"]').click();assert.equal(await page.locator('#rule-input').inputValue(),'potentiometer');assert.equal(await page.locator('#rule-mode').inputValue(),'follow');
  assert.equal(await page.locator('[data-draft-output="passive-buzzer"]').isChecked(),true);
  // A deliberate untick must survive rendering another control.
  await page.locator('[data-draft-output="passive-buzzer"]').uncheck();await page.locator('#rule-mode').selectOption('threshold');

@@ -4,13 +4,14 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test tests/core.test.mjs tests/platform.test.mjs",
+    "test": "node --test tests/core.test.mjs tests/platform.test.mjs tests/coding.test.mjs",
     "test:browser": "node tests/browser.test.mjs",
     "test:feedback": "node tests/feedback.test.mjs",
     "test:catalogue": "node tests/catalogue.test.mjs",
     "optimise:images": "node scripts/optimise-images.mjs",
     "test:platform": "node tests/platform-browser.test.mjs",
     "test:setup": "node tests/setup-browser.test.mjs",
+    "test:coding": "node tests/coding-browser.test.mjs",
     "test:pi-runtime": "node tests/pi-runtime.mjs"
   },
   "engines": {

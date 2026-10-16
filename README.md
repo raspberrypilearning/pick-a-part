@@ -17,8 +17,9 @@ always returns to the overview.
 2. **Choose parts:** pick Detect and Do components. Optional, local word-based
    suggestions explain why a part might fit; nothing is silently selected.
 3. **Get ready:** gather the kit and check the editor, Python and libraries for the chosen board.
-4. **Make & code:** test parts on a breadboard, choose a rule, edit the starter and
-   try the complete interaction. A dedicated troubleshooting view helps isolate faults.
+4. **Make & code:** test parts on a breadboard, choose individual component scripts
+   or a combined starter, and try the complete interaction. A dedicated
+   troubleshooting view helps isolate faults.
 5. **Build & play:** fit the circuit, controls and wires into a body, re-test it,
    invite someone to play and revise it.
 6. **This version:** name and save a working version, keeping ideas for later.
@@ -50,6 +51,28 @@ the learner's real test observations.
 Choices remain editable. Parts chosen for later are kept separate from components
 used in active interactions. Removing a selected part pauses its interaction;
 rebuilding code keeps the previous draft.
+
+## Coding choice
+
+Connect & code presents two equally weighted approaches, with neither selected
+for a new build:
+
+- **I’ll code it myself:** scripts for every selected component, with read,
+  copy, download and wiring-help controls. Learners identify the Detect and Do
+  parts used in this version and write the interaction themselves. A separate
+  editable code space is available, or they can explicitly confirm that their
+  program is saved in Thonny. No generator rules are required to continue.
+- **Build a script for me:** the existing interaction choices produce a complete,
+  editable program. The browser preview explores those rules, not Python edits.
+
+Both code drafts survive approach changes, reloads, project export/import and
+board switching. Changing approach resets the combined and assembled test checks,
+not component tests or design notes. Existing projects with code/rules reopen the
+generated route. Manual completion requires selected Detect/Do parts, their test
+records, a program here or confirmed in Thonny, and the same breadboard/play tests.
+Untested parts saved for later do not block this route. Removed in-use parts do.
+Code stored only in Thonny must be saved separately; a website project export
+cannot include that external file. The website never evaluates handwritten code.
 
 ## Pi / Pico choice
 
@@ -168,6 +191,7 @@ npm run test:feedback
 npm run test:catalogue
 npm run test:platform
 npm run test:setup
+npm run test:coding
 ```
 
 Set `TEST_URL` to test a deployed instance, or `PYTHON` to select the Python
@@ -194,6 +218,7 @@ The separate theme changes colour only, not layout or stored projects.
 
 - `catalogue.js`: curated component metadata, assigned pins and test fragments.
 - `pico-setup.js`: optional detailed Pico setup guides and troubleshooting popups.
+- `coding.js`: explicit coding approach and board-specific component-script workspace.
 - `extra-bricks.js`: the remaining Pico components and Pi-only reference entries.
 - `chooser.js`: explained matches, selected parts and expandable alternatives.
 - `pi-source.js`: maintained Raspberry Pi reference text, example code and image names.
@@ -224,14 +249,16 @@ not grant a new licence over those assets.
 
 - One instance of each available component per board, respecting the pin-sharing
   groups; Pi Camera remains an explicitly manual-code extension.
-- One controlling rule per output, with multiple independent interactions.
+- The generator supports one controlling rule per output, with multiple
+  independent interactions. Self-written programs are not limited to these rules.
 - Browser previews illustrate the chosen rules, not handwritten code edits.
 - Suggestions use simple local keyword matching, not AI interpretation.
 - No hardware connection, Python execution or automatic wiring validation.
 - Physical Pi/Pico, circuit, camera and mechanical testing remains outstanding.
 - Automated tests parse 500 Python programs (237 Pico / 263 Pi), execute 216 Pico
   combinations with mocks and 36 Pi combinations with real gpiozero/mock pins.
-  Four browser suites cover both catalogues, persistence and responsive layouts.
+  Six browser suites cover both catalogues, coding routes, setup popups,
+  persistence and responsive layouts.
   These checks are not hardware validation.
 - No accounts, uploads, analytics or cloud project storage. Work is saved in
   browser local storage; use project export/import to move it between computers

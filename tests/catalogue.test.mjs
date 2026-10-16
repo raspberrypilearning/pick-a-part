@@ -52,10 +52,10 @@ try{
  await click('close-confirm');assert.deepEqual((await saved()).selected,p.selected);
  await pick('speaker');await page.getByRole('button',{name:'Swap parts',exact:true}).click();
  let state=await saved();assert.deepEqual(state.selected,['button','speaker']);assert.equal(state.rules.length,1);assert.match(state.code,/# Keep my edits/);assert.equal(state.tested['passive-buzzer'],false);
- await nav('make');await page.locator('[data-make-tab="code"]').click();assert.equal(await page.locator('.rule-card.suspended').count(),1);
+ await nav('make');await page.locator('[data-make-tab="code"]').click();await page.locator('[data-code-mode="generated"]').click();assert.equal(await page.locator('.rule-card.suspended').count(),1);
  // Run each new part through selection -> code -> preview -> physical-making help.
  for(const c of catalogue.filter(c=>!['button','potentiometer','capacitive-touch','ldr','led','passive-buzzer','servo'].includes(c.id))){
-  const fixture=freshProject();fixture.selected=c.kind==='detect'?[c.id,'led']:['button',c.id];fixture.page='make';await load(fixture);await page.locator('[data-make-tab="code"]').click();
+  const fixture=freshProject();fixture.selected=c.kind==='detect'?[c.id,'led']:['button',c.id];fixture.page='make';await load(fixture);await page.locator('[data-make-tab="code"]').click();await page.locator('[data-code-mode="generated"]').click();
   if(c.range){assert.equal(await page.locator('#rule-threshold').inputValue(),'25');assert.match(await page.locator('[for="rule-threshold"]').textContent(),/°C/);}
   await page.getByRole('button',{name:'Add to my code',exact:true}).click();
   assert.match(await page.locator('#code-editor').inputValue(),new RegExp(c.variable));

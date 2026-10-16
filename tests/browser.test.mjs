@@ -46,7 +46,7 @@ try{
  await click('parts-workbench');
  for(const id of ['button','led']){await page.locator(`.part-row [data-brick="${id}"]`).click();if(id==='button'){assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/two conductive contacts/);assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/Squeeze a pad/);await page.locator('#brick-dialog .contact-guide summary').click();assert.match(await page.locator('#brick-dialog .contact-guide').textContent(),/GP10 \(physical pin 14\)/);await page.screenshot({path:'outputs/prototype-button-help.png',fullPage:true});}await page.locator(`[data-tested="${id}"]`).check();await click('close-brick');}
  await page.reload();assert.match(await page.locator('[data-make-tab="parts"]').textContent(),/2\/5/);
- await click('code-workbench');assert.equal(await page.getByLabel('What detects?',{exact:true}).count(),1);
+ await click('code-workbench');await page.locator('[data-code-mode="generated"]').click();assert.equal(await page.getByLabel('What detects?',{exact:true}).count(),1);
  await page.locator('[data-draft-output="led"]').check();await page.getByRole('button',{name:'Add to my code'}).click();
  await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/active/);await page.locator('#preview-press').click();assert.match(await page.locator('#preview-state').textContent(),/resting/);
  assert.equal(await page.locator('#breadboard-happy').isChecked(),false,'preview is not a hardware test');
