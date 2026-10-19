@@ -15,7 +15,7 @@ let contrastChecks=0;
 try{
  await page.goto(process.env.TEST_URL||'http://127.0.0.1:4173');
  await page.locator('h1').waitFor();
- assert.equal(await page.title(),'Toy workshop · Pick a path');
+ assert.equal(await page.title(),'Build Lab');
  const logo=page.getByRole('img',{name:'Code Club',exact:true});
  await logo.evaluate(img=>img.decode());
  assert.equal(await logo.getAttribute('src'),'assets/code-club-logo.svg');

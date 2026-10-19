@@ -162,7 +162,7 @@ export function generateCode(p) {
 }
 // Accept only our bounded data schema, never imported HTML or executable code.
 export function validateProject(raw) {
-  if (!raw || ![1,VERSION].includes(raw.version) || !raw.idea || !Array.isArray(raw.selected) || !Array.isArray(raw.rules)) throw new Error('This is not a Toy workshop project file.');
+  if (!raw || ![1,VERSION].includes(raw.version) || !raw.idea || !Array.isArray(raw.selected) || !Array.isArray(raw.rules)) throw new Error('This is not a Build Lab project file.');
   if(raw.platform!==undefined&&!['pico','pi'].includes(raw.platform))throw new Error('Unknown board in this project.');
   const p = freshProject(raw.platform||'pico'), byId=byIdFor(p.platform), catalogue=catalogueFor(p.platform);
   const str = (v,max=6000) => typeof v==='string' ? v.slice(0,max) : '';

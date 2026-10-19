@@ -1,4 +1,4 @@
-# Pick a part
+# Build Lab
 
 A browser prototype for a learner-led toy-making project with Raspberry Pi Pico
 (MicroPython + picozero) or Raspberry Pi (Python + gpiozero), supported by [Skills Bricks](https://raspberrypifoundation.github.io/skills-bricks/).
